@@ -14,3 +14,4 @@ The included tools are:
 Requirements
 ========
 * [GCC compiler](http://gcc.gnu.org/)
+* [GNU C Library(glibc)](http://www.gnu.org/software/libc/)
