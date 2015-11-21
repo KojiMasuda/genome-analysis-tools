@@ -100,7 +100,6 @@ static void get_path (char *str, const char *delim, char *path, size_t path_len,
       fprintf(stderr, "path string length is over %lu.\n", path_len * sizeof(char));
       goto err;
     }
-
     free(tmp);
     tmp = NULL;
   }

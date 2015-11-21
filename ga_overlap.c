@@ -25,6 +25,7 @@ static int add_one_val (char line_out[], const char *line, const char *val);
 static void usage()
 {
   printf("Tool:    genome analysis\n\n\
+Program: ga_overlap\n\
 Summary: report the overlaps of two peaks/summits\n\n\
 Usage:   ga_overlap [options] -1 <file1> -2 <file2>\n\n\
 Options:\n\
@@ -42,7 +43,7 @@ Options:\n\
 
 static void version()
 {
-  printf("'ga_overlap' in genome analysis tools version: 0.0.1\n");
+  printf("'ga_overlap' in genome analysis tools version: %d.%d.%d\n", VER_MAJOR, VER_MOD, VER_MINOR);
   exit(0);
 }
 
@@ -54,6 +55,8 @@ static int col_st1 = 1, col_st2 = 1;
 static int col_ed1 = 2, col_ed2 = 2;
 char *ga_header_line = NULL; //header line. Note this is global variable
 static char ga_line_out[LINE_STR_LEN]; //output line with overlapping flag
+static double totnb = 0.0, ovnb = 0.0, novnb = 0.0; //peak numbers
+
 
 static const Argument args[] = {
   {"-h"          , ARGUMENT_TYPE_FUNCTION, usage  },
@@ -93,6 +96,8 @@ int main (int argc, char *argv[])
   char output_name[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN]; //output file name
   time_t timer;
 
+  FILE *fp;
+
   argument_read(&argc, argv, args);//reading arguments
   if (file1 == NULL || file2 == NULL) usage();
 
@@ -107,8 +112,8 @@ header flag:                     %d\n\
 time:                            %s\n",\
  "ga_overlap", file1, file2, col_chr1, col_st1, col_ed1, col_chr2, col_st2, col_ed2, hf, ctime(&timer) );
 
-  ga_parse_chr_bs(file1, &chr_block_head1, col_chr1, col_st1, col_ed1, hf); //parsing each binding sites for each chromosome
-  ga_parse_chr_bs(file2, &chr_block_head2, col_chr2, col_st2, col_ed2, hf);
+  ga_parse_chr_bs(file1, &chr_block_head1, col_chr1, col_st1, col_ed1, -1, hf); //parsing each binding sites for each chromosome without strand info
+  ga_parse_chr_bs(file2, &chr_block_head2, col_chr2, col_st2, col_ed2, -1, hf);
 
   for (ch1 = chr_block_head1; ch1; ch1 = ch1->next) {
     for (ch2 = chr_block_head2; ch2; ch2 = ch2->next) {
@@ -122,6 +127,8 @@ time:                            %s\n",\
         ga_output_add (&nonov_head, bs_nonov->line);
         if (add_one_val(ga_line_out, bs_nonov->line, "NonOver\n") < 0) goto err; //making output link list with flag
         ga_output_add(&output_head, ga_line_out);
+        totnb += 1.0; //total peak number
+        novnb += 1.0; //non-overlapping peak number
       }
     }
   }
@@ -141,6 +148,23 @@ time:                            %s\n",\
     ga_write_lines (output_name, output_head, ga_line_out); //note that header is line_out, not ga_header_line
   }
   else ga_write_lines (output_name, output_head, ga_header_line);
+
+  sprintf(output_name, "%s%s_vs_%s_summary.txt", path1, fn1, fn2); //concatenating output file name
+  if ((fp = fopen(output_name, "w")) == NULL) {
+    LOG("error: output file cannot be open.");
+    goto err;
+  }
+  sprintf(ga_line_out, "name\ttotal\tOver\tNonOver\n");
+  if (fputs(ga_line_out, fp) == EOF) {
+    LOG("error: file writing error.");
+    goto err;
+  }
+  sprintf(ga_line_out, "%s\t%d\t%d(%.3f)\t%d(%.3f)\n", fn1, (int)totnb, (int)ovnb, ovnb/totnb, (int)novnb, novnb/totnb);
+  if (fputs(ga_line_out, fp) == EOF) {
+    LOG("error: file writing error.");
+    goto err;
+  }
+  fclose(fp);
 
   if (ga_header_line) free(ga_header_line);
   ga_free_chr_block(&chr_block_head1);
@@ -175,6 +199,7 @@ static void cmp_overlap (struct bs *bs1, struct bs *bs2, struct output **output_
         ga_output_add(ov_head, i->line);
         if (add_one_val(ga_line_out, i->line, "Over\n") < 0) goto err;
         ga_output_add(output_head, ga_line_out);
+        ovnb += 1.0; //overlapping peak number
         break;
       }
     }
@@ -182,8 +207,11 @@ static void cmp_overlap (struct bs *bs1, struct bs *bs2, struct output **output_
       ga_output_add(nonov_head, i->line);
       if (add_one_val(ga_line_out, i->line, "NonOver\n") < 0) goto err;
       ga_output_add(output_head, ga_line_out);
+      novnb += 1.0; //non-overlapping peak number
     }
+    totnb += 1.0; //total peak number
   }
+  return;
 
 err:
   return;

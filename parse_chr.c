@@ -12,9 +12,11 @@
   "%s:line%d:%s(): " m "\n", \
   __FILE__, __LINE__, __FUNCTION__)
 
-static char *extract_val_line (const char *line, int col);
+static char *extract_val_line (const char *line, int col, const char sep);
 static struct chr_block *chr_block_add (const char *chr, struct chr_block **chr_block_head);
-static struct bs *bs_add (const char *chr, struct chr_block **chr_block_head, const int st, const int ed, const char *line);
+static struct bs *bs_add (const char *chr, struct chr_block **chr_block_head, const unsigned long st, const unsigned long ed, const char strand, const char *line);
+static struct sig *sig_add (const char *chr, struct chr_block **chr_block_head, const unsigned long st, const unsigned long ed, const float val);
+static char *pickup_str (const char *str, const int st);
 
 /*pointer which must be freed: char *ga_header_line */
 /*
@@ -24,12 +26,13 @@ static struct bs *bs_add (const char *chr, struct chr_block **chr_block_head, co
  * col_chr: column num of chr
  * col_st: column num of start
  * col_ed: column num of end
+ * col_strand: column num of strand
  * hf: header flag. If 1, header is obtained from the first line of input file and pointed by global variable, ga_header_line.
  */
-void ga_parse_chr_bs (const char *filename, struct chr_block **chr_block_head, int col_chr, int col_st, int col_ed, int hf)
+void ga_parse_chr_bs (const char *filename, struct chr_block **chr_block_head, int col_chr, int col_st, int col_ed, int col_strand, int hf)
 {
   char line[LINE_STR_LEN];
-  char *chr, *st, *ed;
+  char *chr, *st, *ed, *strand, *e;
   FILE *fp;
   if ((fp = fopen (filename, "r")) == NULL) {
     LOG("errer: input file cannot be open.");
@@ -53,14 +56,104 @@ void ga_parse_chr_bs (const char *filename, struct chr_block **chr_block_head, i
       LOG("errer: line length is too long.");
       goto err;
     }
-    chr = extract_val_line(line, col_chr); //extracting chr, start, end positions
-    st = extract_val_line(line, col_st);
-    ed = extract_val_line(line, col_ed);
+    if (line[0] == '#') continue;
+    chr = extract_val_line(line, col_chr, '\t'); //extracting chr, start, end positions
+    st  = extract_val_line(line, col_st , '\t');
+    ed  = extract_val_line(line, col_ed , '\t');
     chr_block_add (chr, chr_block_head); //adding chr link list (if the chr is already linked, the input chr is just ignored)
-    bs_add (chr, chr_block_head, atoi(st), atoi(ed), line); //adding bs
+    if (col_strand > 0) {
+      strand = extract_val_line(line, col_strand , '\t');
+      bs_add (chr, chr_block_head, strtoul(st, &e, 10), strtoul(ed, &e, 10), strand[0], line); //adding bs with strand info
+      free(strand);
+    } else {
+      bs_add (chr, chr_block_head, strtoul(st, &e, 10), strtoul(ed, &e, 10), '.', line); //adding bs
+    }
     free(chr);
     free(st);
     free(ed);
+  }
+
+  fclose(fp);
+  return;
+
+err:
+  return;
+}
+
+/*
+ * This creates random binding sites for simulation.
+ * **chr_block_head   : pointer of pointer to struct chr_block.
+ * *chr_block_head_ori: pointer to struct chr_block original of which summit number is used for picking up random positions.
+ * *chr_table         : pointer to struct chr_block genome table to know the length of each chr.
+ */
+void ga_parse_chr_bs_rand (struct chr_block **chr_block_head, struct chr_block *chr_block_head_ori, struct chr_block *chr_table)
+{
+  unsigned long i;
+  int rvalue;
+  struct chr_block *ch, *c_table;
+  clock_t cl;
+
+  cl=clock();
+  srand((unsigned)time(NULL)*cl); //seeds
+
+  for (ch = chr_block_head_ori; ch; ch = ch -> next) {
+    for (c_table = chr_table; c_table; c_table = c_table -> next) { //checking ch is in c_table
+      if (!strcmp(ch->chr, c_table->chr)) break;
+    }
+
+    if (c_table == NULL) {
+      LOG("error: chr is not in the genome table.");
+      goto err;
+    }
+
+    chr_block_add (ch->chr, chr_block_head); //adding chr link list (if the chr is already linked, the input chr is just ignored)
+    for (i=0; i < ch->bs_nb; i++) {
+      rvalue = (rand()) % c_table->bs_list->st + 1; //rvalue must be 1-chr length
+      bs_add (ch->chr, chr_block_head, rvalue, rvalue, '.', "."); //adding bs
+    }
+  }
+
+  return;
+
+err:
+  return;
+}
+
+/*
+ * This is the main function for parsing.
+ * *filename: input file name
+ * **chr_block_head: pointer of pointer to struct chr_block.
+ * col_chr: column num of chr
+ * col_st: column num of start
+ * col_ed: column num of end
+ * hf: header flag. If 1, header is obtained from the first line of input file and pointed by global variable, ga_header_line.
+ */
+void ga_parse_bedgraph (const char *filename, struct chr_block **chr_block_head)
+{
+  char line[LINE_STR_LEN];
+  char *chr, *st, *ed, *val, *e;
+  FILE *fp;
+  if ((fp = fopen (filename, "r")) == NULL) {
+    LOG("errer: input file cannot be open.");
+    goto err;
+  }
+
+  while (fgets(line, LINE_STR_LEN * sizeof(char), fp) != NULL) {
+    if (strlen(line) >= LINE_STR_LEN -1) {
+      LOG("errer: line length is too long.");
+      goto err;
+    }
+    if (line[0] == '#') continue;
+    chr = extract_val_line(line, 0, '\t'); //extracting chr, start, end positions and val
+    st  = extract_val_line(line, 1, '\t');
+    ed  = extract_val_line(line, 2, '\t');
+    val = extract_val_line(line, 3, '\t');
+    chr_block_add (chr, chr_block_head); //adding chr link list (if the chr is already linked, the input chr is just ignored)
+    sig_add (chr, chr_block_head, strtoul(st, &e, 10), strtoul(ed, &e, 10), atof(val)); //adding bs
+    free(chr);
+    free(st);
+    free(ed);
+    free(val);
   }
 
   fclose(fp);
@@ -74,9 +167,10 @@ err:
 /*
  * This extract a value from tab-delimited line
  * *line: input line
- * col: column number for extraction
+ * col  : column number for extraction
+ * sep  : char that separates *line. Ex ' ' or '\t'.
  */
-static char *extract_val_line (const char *line, int col) {
+static char *extract_val_line (const char *line, int col, const char sep) {
   int x = 0, i = 0, j = 0;
   int len = strlen(line);
   
@@ -87,7 +181,7 @@ static char *extract_val_line (const char *line, int col) {
   }
 
   while (line[i] != '\0' && line[i] != '\n' && x <= col) {
-    if (line[i] == '\t') {
+    if (line[i] == sep) {
       i++;
       x++;
     }
@@ -134,6 +228,10 @@ static struct chr_block *chr_block_add (const char *chr, struct chr_block **chr_
   }
   p -> chr = strdup(chr); //assigning chromosome name
 
+  /*initialization of bs and sig block*/
+  p -> bs_init = 0;
+  p -> sig_init = 0;
+
   p -> next = *chr_block_head; //adding new chr block
   *chr_block_head = p;
 
@@ -151,9 +249,10 @@ err:
  * **chr_block_head: pointer of pointer to the head of the link
  * st: start position
  * ed: end position
+ * strand: strand either '+', '-' or '.'.
  * *line: pointer to each line which is read
  */
-static struct bs *bs_add (const char *chr, struct chr_block **chr_block_head, const int st, const int ed, const char *line)
+static struct bs *bs_add (const char *chr, struct chr_block **chr_block_head, const unsigned long st, const unsigned long ed, const char strand, const char *line)
 {
   struct bs *p;
   struct chr_block *ch;
@@ -165,6 +264,7 @@ static struct bs *bs_add (const char *chr, struct chr_block **chr_block_head, co
   }
   p -> st = st; //assigning start position
   p -> ed = ed; //assigning end position
+  p -> strand = strand; //assigning strand info
   p -> line = strdup(line); //assigning line
 
   for (ch = *chr_block_head; ch; ch = ch->next) { //checking chr is already in chr_block list
@@ -176,7 +276,18 @@ static struct bs *bs_add (const char *chr, struct chr_block **chr_block_head, co
     goto err;
   }
 
+  /*initialization of bs*/
+  if (!ch -> bs_init) { //if the bs is the first one to be added.
+    ch -> bs_list = NULL;
+    ch -> bs_init = 1; //initialization
+    ch -> bs_nb = 1; //binding site number
+  } else { //if the bs is not the first one to be added.
+    ch -> bs_nb = ch -> bs_nb + 1;
+  }
+
+  p -> prev = NULL;
   p -> next = ch -> bs_list; //adding new bs
+  if (ch -> bs_list) ch -> bs_list -> prev = p;
   ch -> bs_list = p;
 
   return (p);
@@ -186,6 +297,338 @@ err:
   return (NULL);
 }
 
+/*pointer which must be freed: struct sig *p */
+/*
+ * This adds new struct bs list
+ * *chr: pointer to chr name
+ * **chr_block_head: pointer of pointer to the head of the link
+ * st: start position
+ * ed: end position
+ * *line: pointer to each line which is read
+ */
+static struct sig *sig_add (const char *chr, struct chr_block **chr_block_head, const unsigned long st, const unsigned long ed, const float val)
+{
+  struct sig *p;
+  struct chr_block *ch;
+
+  p = malloc(sizeof(struct sig));
+  if (p == NULL) {
+    LOG("error: lack of memory.");
+    goto err;
+  }
+  p -> st = st; //assigning start position
+  p -> ed = ed; //assigning end position
+  p -> val = val; //assigning value
+
+  for (ch = *chr_block_head; ch; ch = ch->next) { //checking chr is already in chr_block list
+    if (!strcmp(chr, ch->chr)) break;
+  }
+
+  if (ch == NULL) {
+    fprintf(stderr, "error: chr %s is not in the chr block list", chr);
+    goto err;
+  }
+
+  /*initialization of sig block*/
+  if (!ch -> sig_init) { //if the sig is the first one to be added.
+    ch -> sig_list = NULL;
+    ch -> sig_init = 1; //initialization
+  }
+
+  p -> prev = NULL;
+  p -> next = ch -> sig_list; //adding new sig
+  if (ch -> sig_list) ch -> sig_list -> prev = p;
+  ch -> sig_list = p;
+
+  return (p);
+
+err:
+  if (p) free (p);
+  return (NULL);
+}
+
+/*pointer which must be freed: struct sig *p */
+/*
+ * This parses separated wig.gz files.
+ * *filename       : file name
+ * **chr_block_head: pointer of pointer to struct chr_block
+ */
+void ga_parse_sepwiggz (const char *filename, struct chr_block **chr_block_head)
+{
+  char line[LINE_STR_LEN], tmpfile[128], str[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN], fileline[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN], str_last[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN];
+
+  char *step=NULL, *chr=NULL, *chr_tmp=NULL, *span=NULL, *span_tmp=NULL, *val_tmp=NULL, *st_tmp=NULL, *start=NULL, *step_tmp=NULL, *step_p=NULL, *e;
+  int span_val=1, step_val=0;
+  unsigned long st=0;
+  struct gzFile_s *gfp = NULL;
+  FILE *fp = NULL;
+
+  sprintf(tmpfile,"/tmp/ls%d.tmp",getpid()); //tmp file
+  sprintf(str,"ls -1 %s*.wig.gz > %s", filename, tmpfile); //list of wig.gz file is written in tmp file
+  if(system(str) == -1) {
+    LOG("error: system error for 'ls -1 filename*.wig.gz > tmpfile'");
+    goto err;
+  }
+
+  if ((fp = fopen (tmpfile, "r")) == NULL) {
+    LOG("errer: tmp file cannot be open.");
+    goto err;
+  }
+
+  while (fgets(fileline, (PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN) * sizeof(char), fp) != NULL) { //reading file name list
+    if (strlen(fileline) >= PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN -1) {
+      LOG("errer: filename is too long.");
+      goto err;
+    }
+
+    fileline[strlen(fileline) - 1] = '\0'; // the last \n is set as \0
+    if ((gfp = gzopen (fileline, "r")) == NULL) {
+      LOG("errer: input file cannot be open.");
+      goto err;
+    }
+
+    while (gzgets(gfp, line, LINE_STR_LEN * sizeof(char)) != NULL) { //reading each line of each wig.gz
+      if (strlen(line) >= LINE_STR_LEN -1) {
+        LOG("errer: line length is too long.");
+        goto err;
+      }
+
+      step = extract_val_line(line, 0, '\t'); //extracting step, chr, and so on...
+
+      if (!strcmp(step, "variableStep")) {
+        chr_tmp  = extract_val_line(line, 1, '\t');
+        span_tmp = extract_val_line(line, 2, '\t');
+        chr = pickup_str (chr_tmp, 6);
+        chr_block_add (chr, chr_block_head); //adding chr link list (if the chr is already linked, the input chr is just ignored)
+        if (span_tmp!=NULL) {
+          span = pickup_str (span_tmp, 5);
+          span_val = atoi(span);
+          if (span) free(span);
+          free(span_tmp);
+        }
+        if (chr_tmp) free(chr_tmp);
+        break;
+      } else if (!strcmp(step, "fixedStep")) {
+        chr_tmp  = extract_val_line(line, 1, '\t');
+        st_tmp   = extract_val_line(line, 2, '\t');
+        step_tmp = extract_val_line(line, 3, '\t');
+        span_tmp = extract_val_line(line, 4, '\t');
+
+        chr = pickup_str (chr_tmp, 6);
+        chr_block_add (chr, chr_block_head); //adding chr link list (if the chr is already linked, the input chr is just ignored)
+
+        start = pickup_str (st_tmp, 6);
+        st = strtoul(start, &e, 10); //start pos (unsigned long)
+        step_p = pickup_str (step_tmp, 5);
+        step_val = atoi(step_p);
+        if (span_tmp!=NULL) {
+          span = pickup_str (span_tmp, 5);
+          span_val = atoi(span);
+          if (span) free(span);
+          free(span_tmp);
+        }
+        if (chr_tmp) free(chr_tmp);
+        if (st_tmp) free(st_tmp);
+        if (start) free(start);
+        if (step_tmp) free(step_tmp);
+        if (step_p) free(step_p);
+        break;
+      }
+    }
+
+    if (!strcmp(step, "variableStep")) {
+      while (gzgets(gfp, line, LINE_STR_LEN * sizeof(char)) != NULL) { //reading each line
+        st_tmp  = extract_val_line(line, 0, '\t');
+        val_tmp = extract_val_line(line, 1, '\t');
+        st = strtoul(st_tmp, &e, 10);
+        sig_add (chr, chr_block_head, st, st + span_val, atof(val_tmp));
+        free(st_tmp);
+        free(val_tmp);
+      }
+    } else if (!strcmp(step, "fixedStep")) {
+      while (gzgets(gfp, line, LINE_STR_LEN * sizeof(char)) != NULL) { //reading each line
+        val_tmp = extract_val_line(line, 0, '\t');
+        sig_add (chr, chr_block_head, st, st + span_val, atof(val_tmp));
+        free(val_tmp);
+        st += step_val;
+      }
+    }
+  }
+
+  if (chr) free(chr);
+  if (step) free(step);
+  gzclose(gfp);
+  fclose(fp);
+
+  sprintf(str_last,"rm -f %s",tmpfile);
+  if(system(str_last) == -1) {
+    LOG("error: system error for 'rm -f tmpfile'");
+    goto err;
+  }
+
+  return;
+
+err:
+  if (step) free(step);
+  if (chr) free(chr);
+  if (chr_tmp) free(chr_tmp);
+  if (span) free(span);
+  if (span_tmp) free(span_tmp);
+  if (val_tmp) free(val_tmp);
+  if (st_tmp) free(st_tmp);
+  if (start) free(start);
+  if (step_tmp) free(step_tmp);
+  if (step_p) free(step_p);
+  return;
+}
+
+/*
+ * This parses one wig.gz files.
+ * *filename       : file name
+ * **chr_block_head: pointer of pointer to struct chr_block
+ */
+void ga_parse_onewiggz (const char *filename, struct chr_block **chr_block_head)
+{
+  char line[LINE_STR_LEN], stephold[20];
+
+  char *step=NULL, *chr=NULL, *chr_tmp=NULL, *span=NULL, *span_tmp=NULL, *val_tmp=NULL, *st_tmp=NULL, *start=NULL, *step_tmp=NULL, *step_p=NULL, *e;
+  int span_val=1, st=0, step_val=0, fl=0;
+  struct gzFile_s *gfp = NULL;
+
+
+  if ((gfp = gzopen (filename, "r")) == NULL) {
+    LOG("errer: input file cannot be open.");
+    goto err;
+  }
+
+  while (gzgets(gfp, line, LINE_STR_LEN * sizeof(char)) != NULL) { //reading each line
+    if (strlen(line) >= LINE_STR_LEN -1) {
+      LOG("errer: line length is too long.");
+      goto err;
+    }
+
+    step = extract_val_line(line, 0, ' '); //extracting step, chr, and so on...
+
+    if (!strcmp(step, "variableStep")) {
+      chr_tmp  = extract_val_line(line, 1, ' ');
+      span_tmp = extract_val_line(line, 2, ' ');
+
+      chr = pickup_str (chr_tmp, 6);
+      chr_block_add (chr, chr_block_head); //adding chr link list (if the chr is already linked, the input chr is just ignored)
+
+      if (span_tmp!=NULL) {
+        span = pickup_str (span_tmp, 5);
+        span_val = atoi(span);
+        if (span) free(span);
+        free(span_tmp);
+      }
+      if (chr_tmp) free(chr_tmp);
+      fl = 1; //with the flag, the program can read the value.
+      strcpy(stephold, step);
+      continue;
+    } else if (!strcmp(step, "fixedStep")) {
+      chr_tmp  = extract_val_line(line, 1, ' ');
+      st_tmp   = extract_val_line(line, 2, ' ');
+      step_tmp = extract_val_line(line, 3, ' ');
+      span_tmp = extract_val_line(line, 4, ' ');
+
+      chr = pickup_str (chr_tmp, 6);
+      chr_block_add (chr, chr_block_head); //adding chr link list (if the chr is already linked, the input chr is just ignored)
+
+      start = pickup_str (st_tmp, 6);
+      st = strtoul(start, &e, 10); //start pos (unsigned long)
+      step_p = pickup_str (step_tmp, 5);
+      step_val = atoi(step_p);
+      if (span_tmp!=NULL) {
+        span = pickup_str (span_tmp, 5);
+        span_val = atoi(span);
+        if (span) free(span);
+        free(span_tmp);
+      }
+      if (chr_tmp) free(chr_tmp);
+      if (st_tmp) free(st_tmp);
+      if (start) free(start);
+      if (step_tmp) free(step_tmp);
+      if (step_p) free(step_p);
+      fl = 1; //with the flag, the program can read the value
+      strcpy(stephold, step);
+      continue;
+    } else if (fl && !strcmp(stephold, "variableStep")) {
+      st_tmp  = extract_val_line(line, 0, ' ');
+      val_tmp = extract_val_line(line, 1, ' ');
+      st = strtoul(st_tmp, &e, 10);
+      sig_add (chr, chr_block_head, st, st + span_val, atof(val_tmp));
+      free(st_tmp);
+      free(val_tmp);
+    } else if (fl && !strcmp(stephold, "fixedStep")) {
+      val_tmp = extract_val_line(line, 0, ' ');
+      sig_add (chr, chr_block_head, st, st + span_val, atof(val_tmp));
+      free(val_tmp);
+      st += step_val;
+    }
+  }
+
+  if (chr) free(chr);
+  if (step) free(step);
+  gzclose(gfp);
+
+  return;
+
+err:
+  if (step) free(step);
+  if (chr) free(chr);
+  if (chr_tmp) free(chr_tmp);
+  if (span) free(span);
+  if (span_tmp) free(span_tmp);
+  if (val_tmp) free(val_tmp);
+  if (st_tmp) free(st_tmp);
+  if (start) free(start);
+  if (step_tmp) free(step_tmp);
+  if (step_p) free(step_p);
+  return;
+}
+
+/*
+ *pointer which must be freed: char *strtemp
+ * This picks up string from str
+ * *str: original string
+ * st  : the number where picking starts. For example, if the str = "chr=chr1" and you want to get "chr1", st = 4. For now, we cannot pick up string like "chr1" from "chr1=chr" or "aaa=chr1,bbb".
+ */
+static char *pickup_str (const char *str, const int st) {
+  int i;
+  int len = strlen(str);
+
+  char *strtemp = calloc (len, sizeof(char));
+  if (strtemp == NULL) {
+    LOG("error: lack of memory.");
+    goto err;
+  }
+
+  for (i = 0; ;i++) {
+    strtemp[i] = str[i+st];
+    if (str[i+st] == '\0') break;
+  }
+
+  return strtemp;
+
+err:
+  if (strtemp) free(strtemp);
+  return (NULL);
+}
+
+/*
+ * This simply sum total peak number from each chr.
+ * *chr_block_head: pointer to struct chr_block
+ */
+unsigned long ga_count_peaks (struct chr_block *chr_block_head)
+{
+  unsigned long smt = 0;
+  struct chr_block *ch;
+  for (ch = chr_block_head; ch; ch = ch->next) {
+    smt = smt + ch -> bs_nb; //adding each bs_nb for each chr
+  }
+  return smt;
+}
 
 /*
  * This frees struct chr_block list
@@ -195,16 +638,30 @@ void ga_free_chr_block (struct chr_block **chr_block)
 {
   struct chr_block *ch, *ch_tmp;
   struct bs *bs, *bs_tmp;
+  struct sig *sig, *sig_tmp;
 
   ch = *chr_block;
   while (ch) {
     bs = ch -> bs_list;
-    while (bs) {
-      free(bs->line);
-      bs_tmp = bs->next;
-      free(bs);
-      bs = bs_tmp;
+    sig = ch -> sig_list;
+
+    if (ch->bs_init) {
+      while (bs) {
+        free(bs->line);
+        bs_tmp = bs->next;
+        free(bs);
+        bs = bs_tmp;
+      }
     }
+
+    if (ch->sig_init) {
+      while (sig) {
+        sig_tmp = sig->next;
+        free(sig);
+        sig = sig_tmp;
+      }
+    }
+
     free(ch->chr);
     ch_tmp = ch->next;
     free(ch);
