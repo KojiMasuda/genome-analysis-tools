@@ -109,7 +109,12 @@ void ga_parse_chr_bs_rand (struct chr_block **chr_block_head, struct chr_block *
     chr_block_add (ch->chr, chr_block_head); //adding chr link list (if the chr is already linked, the input chr is just ignored)
     for (i=0; i < ch->bs_nb; i++) {
       rvalue = (rand()) % c_table->bs_list->st + 1; //rvalue must be 1-chr length
-      bs_add (ch->chr, chr_block_head, rvalue, rvalue, '.', "."); //adding bs
+      if (rvalue % 2) {
+        bs_add (ch->chr, chr_block_head, rvalue, rvalue, '+', "."); //adding bs
+      }
+      else {
+        bs_add (ch->chr, chr_block_head, rvalue, rvalue, '-', ".");
+      }
     }
   }
 

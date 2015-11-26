@@ -110,11 +110,12 @@ int main (int argc, char *argv[])
   struct output *output_head = NULL; //for output
   struct output *output_headr = NULL; //for output
   struct output *output_head_a = NULL; //for output
+  struct output *output_headr_a = NULL; //for output
 
   int rel, i, c, r;
   float t, t2, mu_x, mu_y, ustd_y, var_x, var_y, var_xy;
   float *arr=NULL, *arr_tmp=NULL, *arr_d=NULL, *arr_tmp_d=NULL, *arr_a, *arr_tmp_a;
-  float *arr_r=NULL, *arr_r_tmp=NULL, *arr_r_d=NULL, *arr_r_d_tmp=NULL;
+  float *arr_r=NULL, *arr_r_tmp=NULL, *arr_r_d=NULL, *arr_r_d_tmp=NULL, *arr_r_a=NULL, *arr_r_a_tmp=NULL;
 
   unsigned long smtNb;
 
@@ -352,6 +353,17 @@ time:                            %s\n",\
     }
   }
 
+  if (filesig_m) {
+    arr_r_a = (float*)malloc((((2 * hw) / step + 1) * randnb)*sizeof(float)); //output arr, 1d
+    if (arr_r_a == NULL) {
+      LOG("error: lack of memory.");
+    }
+    arr_r_a_tmp = (float*)malloc(randnb * sizeof(float)); //output arr, 1d
+    if (arr_r_a_tmp == NULL) {
+      LOG("error: lack of memory.");
+    }
+  }
+
   for (r = 0; r < randnb; r++) {
     printf("\rsimulation cycle: %d", r + 1);
     fflush(stdout);
@@ -367,7 +379,11 @@ time:                            %s\n",\
       ch -> bs_list = ga_mergesort_bs(ch -> bs_list); //sorting
     }
 
-    sig_count (chr_block_headr, chr_block_headsig, arr, smtNb, hw, step, win); //calculating signals around random postions
+    if (filesig_m) {
+      sig_count_anti (chr_block_headr, chr_block_headsig, chr_block_headsig_m, arr, arr_a, smtNb, hw, step, win); //calculating signals around random postions
+    } else {
+      sig_count (chr_block_headr, chr_block_headsig, arr, smtNb, hw, step, win); //calculating signals around random postions
+    }
     if (filesig_d)
       sig_count (chr_block_headr, chr_block_headsig_d, arr_d, smtNb, hw, step, win);
 
@@ -382,9 +398,17 @@ time:                            %s\n",\
         mu_x = ga_mean (arr_tmp_d, smtNb);
       }
 
+
       arr_r[i * randnb + r] = mu_y; //storing the mean
       if (filesig_d)
         arr_r_d[i * randnb + r] = mu_x; //storing the mean
+
+      if (filesig_m) { //if anti-sense
+        for (c = 0; c < smtNb; c++)
+          arr_tmp_a[c] = arr_a[i * smtNb + c]; //choosing each win
+        mu_y = ga_mean (arr_tmp_a, smtNb);
+        arr_r_a[i * randnb + r] = mu_y; //storing the mean
+      }
     } //i
   } //r
   printf("\n");
@@ -400,22 +424,42 @@ time:                            %s\n",\
         arr_r_d_tmp[r] = arr_r_d[i * randnb + r]; //choosing signal for each win by counting r = randnb.
       mu_x = ga_mean (arr_r_d_tmp, randnb); //mean for each win
 
-      if (sprintf(ga_line_out, "%d\t%f\t%f\t%f\t%lu\t%s\t%s\n", rel, mu_y / mu_x, mu_y / mu_x, mu_y / mu_x, smtNb, fn_smt, fn_sig) == EOF) {
+      if (sprintf(ga_line_out, "%d\t%f\t%f\t%f\t%lu\trandom\t%s\n", rel, mu_y / mu_x, mu_y / mu_x, mu_y / mu_x, smtNb, fn_sig) == EOF) {
         LOG("error: the summit name or signal name is too long.");
         goto err;
       }
     } else {
-      if (sprintf(ga_line_out, "%d\t%f\t%f\t%f\t%lu\t%s\t%s\n", rel, mu_y, mu_y, mu_y, smtNb, fn_smt, fn_sig) == EOF) {
+      if (sprintf(ga_line_out, "%d\t%f\t%f\t%f\t%lu\trandom\t%s\n", rel, mu_y, mu_y, mu_y, smtNb, fn_sig) == EOF) {
         LOG("error: the summit name or signal name is too long.");
         goto err;
       }
     }
     ga_output_add (&output_headr, ga_line_out);
+
+    if (filesig_m) {
+      for (r = 0; r < randnb; r++)
+        arr_r_a_tmp[r] = arr_r_a[i * randnb + r]; //choosing signal for each win by counting r = randnb.
+      mu_y = ga_mean (arr_r_a_tmp, randnb); //mean for each win
+
+      if (sprintf(ga_line_out, "%d\t%f\t%f\t%f\t%lu\trandom\t%s\n", rel, mu_y, mu_y, mu_y, smtNb, fn_sig) == EOF) {
+        LOG("error: the summit name or signal name is too long.");
+        goto err;
+      }
+      ga_output_add (&output_headr_a, ga_line_out);
+    }
+
     rel -= step;
   } //i
 
-  sprintf(output_name, "%s%s_around_%s_halfwid%dwinsize%dstep%d_random%d.txt", path_sig, fn_sig, fn_smt, hw, win, step, randnb);
-  ga_write_lines (output_name, output_headr, "relative_pos\tsmt_mean\tCI95.00percent_U\tCI95.00percent_L\tsmtNb\tCentered\tSignal\n");
+  if (filesig_m) {
+    sprintf(output_name, "%s%s_around_%s_halfwid%dwinsize%dstep%d_sense_random%d.txt", path_sig, fn_sig, fn_smt, hw, win, step, randnb);
+    ga_write_lines (output_name, output_headr, "relative_pos\tsmt_mean\tCI95.00percent_U\tCI95.00percent_L\tsmtNb\tCentered\tSignal\n");
+    sprintf(output_name, "%s%s_around_%s_halfwid%dwinsize%dstep%d_anti_random%d.txt", path_sig, fn_sig, fn_smt, hw, win, step, randnb);
+    ga_write_lines (output_name, output_headr_a, "relative_pos\tsmt_mean\tCI95.00percent_U\tCI95.00percent_L\tsmtNb\tCentered\tSignal\n");
+  } else {
+    sprintf(output_name, "%s%s_around_%s_halfwid%dwinsize%dstep%d_random%d.txt", path_sig, fn_sig, fn_smt, hw, win, step, randnb);
+    ga_write_lines (output_name, output_headr, "relative_pos\tsmt_mean\tCI95.00percent_U\tCI95.00percent_L\tsmtNb\tCentered\tSignal\n");
+  }
 
   goto rtfree;
 
@@ -424,10 +468,14 @@ rtfree:
   if (arr_tmp) free(arr_tmp);
   if (arr_d) free(arr_d);
   if (arr_tmp_d) free(arr_tmp_d);
+  if (arr_a) free(arr_a);
+  if (arr_tmp_a) free(arr_tmp_a);
   if (arr_r) free(arr_r);
   if (arr_r_tmp) free(arr_r_tmp);
   if (arr_r_d) free(arr_r_d);
   if (arr_r_d_tmp) free(arr_r_d_tmp);
+  if (arr_r_a) free(arr_r_a);
+  if (arr_r_a_tmp) free(arr_r_a_tmp);
   if (chr_block_headsmt) ga_free_chr_block(&chr_block_headsmt);
   if (chr_block_headsig) ga_free_chr_block(&chr_block_headsig);
   if (chr_block_headsig_d) ga_free_chr_block(&chr_block_headsig_d);
@@ -437,6 +485,7 @@ rtfree:
   if (output_head) ga_free_output(&output_head);
   if (output_headr) ga_free_output(&output_headr);
   if (output_head_a) ga_free_output(&output_head_a);
+  if (output_headr_a) ga_free_output(&output_headr_a);
   if (ga_header_line) free(ga_header_line);
 
   return 0;
@@ -446,10 +495,14 @@ err:
   if (arr_tmp) free(arr_tmp);
   if (arr_d) free(arr_d);
   if (arr_tmp_d) free(arr_tmp_d);
+  if (arr_a) free(arr_a);
+  if (arr_tmp_a) free(arr_tmp_a);
   if (arr_r) free(arr_r);
   if (arr_r_tmp) free(arr_r_tmp);
   if (arr_r_d) free(arr_r_d);
   if (arr_r_d_tmp) free(arr_r_d_tmp);
+  if (arr_r_a) free(arr_r_a);
+  if (arr_r_a_tmp) free(arr_r_a_tmp);
   if (chr_block_headsmt) ga_free_chr_block(&chr_block_headsmt);
   if (chr_block_headsig) ga_free_chr_block(&chr_block_headsig);
   if (chr_block_headsig_d) ga_free_chr_block(&chr_block_headsig_d);
@@ -459,8 +512,8 @@ err:
   if (output_head) ga_free_output(&output_head);
   if (output_headr) ga_free_output(&output_headr);
   if (output_head_a) ga_free_output(&output_head_a);
+  if (output_headr_a) ga_free_output(&output_headr_a);
   if (ga_header_line) free(ga_header_line);
-
   return -1;
 }
 
@@ -570,7 +623,7 @@ static void sig_count_anti (struct chr_block *chr_block_headsmt, struct chr_bloc
   float val_tmp;
 
   for (ch_smt = chr_block_headsmt; ch_smt; ch_smt = ch_smt->next) {
-    printf("calculating reads on %s\n", ch_smt->chr);
+//    printf("calculating reads on %s\n", ch_smt->chr);
     for (ch_sig = chr_block_headsig_p; ch_sig; ch_sig = ch_sig->next) {
       if (!strcmp(ch_smt->chr, ch_sig->chr)) break; //if the same chr is included in smt and sig
     }
