@@ -20,6 +20,7 @@
   __FILE__, __LINE__, __FUNCTION__)
 
 static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], unsigned long smtNb, int hw, int step, int win);
+static void sig_count_anti (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig_p, struct chr_block *chr_block_headsig_m, float arr[], float arr_a[], unsigned long smtNb, int hw, int step, int win);
 
 static void usage()
 {
@@ -36,6 +37,7 @@ Options:\n\
          --col_strand <int>: column number for strand of summit file (default:-1).\n\
          --header: <int> the header of summit file is preserved (default:0).\n\
          --gt: genome table file (default:NULL)\n\
+         --sig_minus: signal file from minus strand. With this argument, the program calculates not only sense reads, but also anti-sense reads. (default:NULL)\n\
          --sig_d: signal denominator file like input (default:NULL)\n\
          --hw: <int> half range size (default:1000)\n\
          --step: <int> step size (default: 10)\n\
@@ -55,6 +57,7 @@ static int hf = 0;
 static char *filesmt = NULL;
 static char *filesig = NULL;
 static char *filesig_d = NULL;
+static char *filesig_m = NULL;
 static char *filegenome = NULL;
 static char *sigfmt = NULL;
 static int col_chr = 0;
@@ -69,24 +72,25 @@ char *ga_header_line = NULL; //header line. Note this is global variable
 static char ga_line_out[LINE_STR_LEN]; //output line including relative pos, smt_mean, CI95.00percent_U, CI95.00percent_L, smtNb, Centered, Signal
 
 static const Argument args[] = {
-  {"-h"           , ARGUMENT_TYPE_FUNCTION, usage      },
-  {"--help"       , ARGUMENT_TYPE_FUNCTION, usage      },
-  {"-v"           , ARGUMENT_TYPE_FUNCTION, version    },
-  {"--header"     , ARGUMENT_TYPE_FLAG_ON , &hf        },
-  {"--smt"        , ARGUMENT_TYPE_STRING  , &filesmt   },
-  {"--sig"        , ARGUMENT_TYPE_STRING  , &filesig   },
-  {"--sig_d"      , ARGUMENT_TYPE_STRING  , &filesig_d },
-  {"--gt"         , ARGUMENT_TYPE_STRING  , &filegenome},
-  {"--sigfmt"     , ARGUMENT_TYPE_STRING  , &sigfmt    },
-  {"--col_chr"    , ARGUMENT_TYPE_INTEGER , &col_chr   },
-  {"--col_start"  , ARGUMENT_TYPE_INTEGER , &col_st    },
-  {"--col_end"    , ARGUMENT_TYPE_INTEGER , &col_ed    },
-  {"--col_strand" , ARGUMENT_TYPE_INTEGER , &col_strand},
-  {"--hw"         , ARGUMENT_TYPE_INTEGER , &hw        },
-  {"--step"       , ARGUMENT_TYPE_INTEGER , &step      },
-  {"--win"        , ARGUMENT_TYPE_INTEGER , &win       },
-  {"--rand"       , ARGUMENT_TYPE_INTEGER , &randnb    },
-  {NULL           , ARGUMENT_TYPE_NONE    , NULL       },
+  {"-h"           , ARGUMENT_TYPE_FUNCTION, usage        },
+  {"--help"       , ARGUMENT_TYPE_FUNCTION, usage        },
+  {"-v"           , ARGUMENT_TYPE_FUNCTION, version      },
+  {"--header"     , ARGUMENT_TYPE_FLAG_ON , &hf          },
+  {"--smt"        , ARGUMENT_TYPE_STRING  , &filesmt     },
+  {"--sig"        , ARGUMENT_TYPE_STRING  , &filesig     },
+  {"--sig_minus"  , ARGUMENT_TYPE_STRING  , &filesig_m   },
+  {"--sig_d"      , ARGUMENT_TYPE_STRING  , &filesig_d   },
+  {"--gt"         , ARGUMENT_TYPE_STRING  , &filegenome  },
+  {"--sigfmt"     , ARGUMENT_TYPE_STRING  , &sigfmt      },
+  {"--col_chr"    , ARGUMENT_TYPE_INTEGER , &col_chr     },
+  {"--col_start"  , ARGUMENT_TYPE_INTEGER , &col_st      },
+  {"--col_end"    , ARGUMENT_TYPE_INTEGER , &col_ed      },
+  {"--col_strand" , ARGUMENT_TYPE_INTEGER , &col_strand  },
+  {"--hw"         , ARGUMENT_TYPE_INTEGER , &hw          },
+  {"--step"       , ARGUMENT_TYPE_INTEGER , &step        },
+  {"--win"        , ARGUMENT_TYPE_INTEGER , &win         },
+  {"--rand"       , ARGUMENT_TYPE_INTEGER , &randnb      },
+  {NULL           , ARGUMENT_TYPE_NONE    , NULL         },
 };
 
 
@@ -97,6 +101,7 @@ int main (int argc, char *argv[])
 
   struct chr_block *chr_block_headsmt = NULL; //for summit
   struct chr_block *chr_block_headsig = NULL; //for signal
+  struct chr_block *chr_block_headsig_m = NULL; //for signal
   struct chr_block *chr_block_headsig_d = NULL; //for signal of denominator
   struct chr_block *chr_block_headr = NULL; //for random simulation
   struct chr_block *chr_block_headg = NULL; //for genome table
@@ -104,10 +109,11 @@ int main (int argc, char *argv[])
   struct chr_block *ch; //for "for loop of chr"
   struct output *output_head = NULL; //for output
   struct output *output_headr = NULL; //for output
+  struct output *output_head_a = NULL; //for output
 
   int rel, i, c, r;
   float t, t2, mu_x, mu_y, ustd_y, var_x, var_y, var_xy;
-  float *arr=NULL, *arr_tmp=NULL, *arr_d=NULL, *arr_tmp_d=NULL;
+  float *arr=NULL, *arr_tmp=NULL, *arr_d=NULL, *arr_tmp_d=NULL, *arr_a, *arr_tmp_a;
   float *arr_r=NULL, *arr_r_tmp=NULL, *arr_r_d=NULL, *arr_r_d_tmp=NULL;
 
   unsigned long smtNb;
@@ -130,6 +136,7 @@ Tools:                           genome analysis tools\n\n\
 Input file summit:               %s\n\
 Input file signal:               %s\n\
 Input file signal denominator:   %s\n\
+Input file signal minus:         %s\n\
 signal format:                   %s\n\
 Genome file:                     %s\n\
 summit col of chr, start, end:   %d, %d, %d\n\
@@ -140,7 +147,7 @@ win size:                        %d\n\
 header flag:                     %d\n\
 random simulation?:              %d\n\
 time:                            %s\n",\
- "ga_reads_summit", filesmt, filesig, filesig_d, sigfmt, filegenome, col_chr, col_st, col_ed, col_strand, hw, step, win, hf, randnb, ctime(&timer) );
+ "ga_reads_summit", filesmt, filesig, filesig_d, filesig_m, sigfmt, filegenome, col_chr, col_st, col_ed, col_strand, hw, step, win, hf, randnb, ctime(&timer) );
 
   ga_parse_file_path (filesmt, path_smt, fn_smt, ext_smt); //parsing input file name into path, file name, and extension
   ga_parse_file_path (filesig, path_sig, fn_sig, ext_sig);
@@ -195,7 +202,36 @@ time:                            %s\n",\
     }
   }
 
-  sig_count (chr_block_headsmt, chr_block_headsig, arr, smtNb, hw, step, win); //counting the signal. This process is the heart of the program!
+  if (filesig_m) { //letting calculation of anti-strand reads mode on
+    if (!strcmp(sigfmt, "bedgraph")) {
+      ga_parse_bedgraph (filesig_m, &chr_block_headsig_m);
+    } else if (!strcmp(sigfmt, "sepwiggz")) {
+      ga_parse_sepwiggz (filesig_m, &chr_block_headsig_m);
+    } else if (!strcmp(sigfmt, "onewiggz")) {
+      ga_parse_onewiggz (filesig_m, &chr_block_headsig_m);
+    } else {
+      LOG("error: invalid signal file format.");
+      goto err;
+    }
+
+    chr_block_headsig_m = ga_mergesort_chr(chr_block_headsig_m); //sorting chr of sig
+    for (ch = chr_block_headsig_m; ch; ch = ch -> next) {
+      ch -> sig_list = ga_mergesort_sig(ch -> sig_list); //sorting sig
+    }
+
+    //allocating arrays
+    arr_a = (float*)malloc((((2 * hw) / step + 1) * smtNb)*sizeof(float)); //output arr, 1d
+    if (arr_a == NULL) {
+      LOG("error: lack of memory.");
+    }
+    arr_tmp_a = (float*)malloc(smtNb*sizeof(float)); //output arr, 1d
+    if (arr_tmp_a == NULL) {
+      LOG("error: lack of memory.");
+    }
+    sig_count_anti (chr_block_headsmt, chr_block_headsig, chr_block_headsig_m, arr, arr_a, smtNb, hw, step, win); //counting the signal. This process is the heart of the program!
+  } else {
+    sig_count (chr_block_headsmt, chr_block_headsig, arr, smtNb, hw, step, win); //counting the signal. This process is the heart of the program!
+  }
 
   if (filesig_d) {//if denominator
     if (!strcmp(sigfmt, "bedgraph")) {
@@ -259,8 +295,35 @@ time:                            %s\n",\
     rel -= step;
   }
 
-  sprintf(output_name, "%s%s_around_%s_halfwid%dwinsize%dstep%d.txt", path_sig, fn_sig, fn_smt, hw, win, step);
+  if (filesig_m) {
+    sprintf(output_name, "%s%s_around_%s_halfwid%dwinsize%dstep%d_sense.txt", path_sig, fn_sig, fn_smt, hw, win, step);
+  } else {
+    sprintf(output_name, "%s%s_around_%s_halfwid%dwinsize%dstep%d.txt", path_sig, fn_sig, fn_smt, hw, win, step);
+  }
   ga_write_lines (output_name, output_head, "relative_pos\tsmt_mean\tCI95.00percent_U\tCI95.00percent_L\tsmtNb\tCentered\tSignal\n");
+
+  if (filesig_m) {
+    rel = hw; //relative pos
+
+    for (i = (2 * hw) / step; i >= 0; i--) { //calculating mean, CI
+      for (c = 0; c < smtNb; c++)
+        arr_tmp_a[c] = arr_a[i * smtNb + c]; //choosing signal for each win by counting c = smtNb.
+
+      mu_y = ga_mean (arr_tmp_a, smtNb); //mean for each win
+      ustd_y = ga_ustd (arr_tmp_a, smtNb); //unbiased standard deviation
+
+      if (sprintf(ga_line_out, "%d\t%f\t%f\t%f\t%lu\t%s\t%s\n", rel, mu_y, mu_y + t*ustd_y/sqrt(smtNb), mu_y - t*ustd_y/sqrt(smtNb), smtNb, fn_smt, fn_sig) == EOF) {
+        LOG("error: the summit name or signal name is too long.");
+        goto err;
+      }
+
+      ga_output_add (&output_head_a, ga_line_out);
+      rel -= step;
+    }
+
+    sprintf(output_name, "%s%s_around_%s_halfwid%dwinsize%dstep%d_anti.txt", path_sig, fn_sig, fn_smt, hw, win, step);
+    ga_write_lines (output_name, output_head_a, "relative_pos\tsmt_mean\tCI95.00percent_U\tCI95.00percent_L\tsmtNb\tCentered\tSignal\n");
+  } //if (filesig_m)
 
   if (!randnb) { //if no random simulation, the program ends.
     goto rtfree; //goto section for free and return 0;
@@ -368,10 +431,12 @@ rtfree:
   if (chr_block_headsmt) ga_free_chr_block(&chr_block_headsmt);
   if (chr_block_headsig) ga_free_chr_block(&chr_block_headsig);
   if (chr_block_headsig_d) ga_free_chr_block(&chr_block_headsig_d);
+  if (chr_block_headsig_m) ga_free_chr_block(&chr_block_headsig_m);
   if (chr_block_headr) ga_free_chr_block(&chr_block_headr);
   if (chr_block_headg) ga_free_chr_block(&chr_block_headg);
   if (output_head) ga_free_output(&output_head);
   if (output_headr) ga_free_output(&output_headr);
+  if (output_head_a) ga_free_output(&output_head_a);
   if (ga_header_line) free(ga_header_line);
 
   return 0;
@@ -388,10 +453,12 @@ err:
   if (chr_block_headsmt) ga_free_chr_block(&chr_block_headsmt);
   if (chr_block_headsig) ga_free_chr_block(&chr_block_headsig);
   if (chr_block_headsig_d) ga_free_chr_block(&chr_block_headsig_d);
+  if (chr_block_headsig_m) ga_free_chr_block(&chr_block_headsig_m);
   if (chr_block_headr) ga_free_chr_block(&chr_block_headr);
   if (chr_block_headg) ga_free_chr_block(&chr_block_headg);
   if (output_head) ga_free_output(&output_head);
   if (output_headr) ga_free_output(&output_headr);
+  if (output_head_a) ga_free_output(&output_head_a);
   if (ga_header_line) free(ga_header_line);
 
   return -1;
@@ -404,7 +471,8 @@ static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *ch
   struct chr_block *ch_smt, *ch_sig;
   struct bs *bs;
   struct sig *j1, *j1_tmp = NULL; //j1 is the pointer to chr_block_headsig which is counted in the window. j1_tmp is the 'memory' of j1 which act as the marker of the previous position of j1 to speed up the calculation. Thanks to j1_tmp, we don't have to search the signal position of 1 for each chr, rather we can start the searching from the previous position.
-  int c=0, i, st, ed, tmp_st, tmp_ed, fl, winNb = (2 * hw) / step + 1;
+  int i, fl, winNb = (2 * hw) / step + 1;
+  unsigned long c=0, st, ed, tmp_st, tmp_ed;
   float val_tmp;
 
   for (ch_smt = chr_block_headsmt; ch_smt; ch_smt = ch_smt->next) {
@@ -434,12 +502,22 @@ static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *ch
       for (i = 0; i < winNb; i++) {
         if (j1_tmp == NULL) {
           for (j1 = ch_sig->sig_list; j1; j1=j1->next) { //here's the slowest part...
-            if (st < j1->ed && j1->st < ed) break; //if one of sig block is inside the win
+            if (st < j1->ed && j1->st < ed) {
+              break; //if one of sig block is inside the win
+            } else if (j1->st >= ed) { //if there's no chance for j1 to overlap win
+              j1 = NULL;
+              break;
+            }
           }
         }
         else {
           for (j1 = j1_tmp; j1; j1=j1->next) { //here's the slowest part...
-            if (st < j1->ed && j1->st < ed) break; //if one of sig block is inside the win
+            if (st < j1->ed && j1->st < ed) {
+              break; //if one of sig block is inside the win
+            } else if (j1->st >= ed) { //if there's no chance for j1 to overlap win
+              j1 = NULL;
+              break;
+            }
           }
         }
 
@@ -482,6 +560,178 @@ static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *ch
 }
 
 
+static void sig_count_anti (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig_p, struct chr_block *chr_block_headsig_m, float arr[], float arr_a[], unsigned long smtNb, int hw, int step, int win)
+{
+  struct chr_block *ch_smt, *ch_sig;
+  struct bs *bs;
+  struct sig *j1, *j1_tmp = NULL; //j1 is the pointer to chr_block_headsig which is counted in the window. j1_tmp is the 'memory' of j1 which act as the marker of the previous position of j1 to speed up the calculation. Thanks to j1_tmp, we don't have to search the signal position of 1 for each chr, rather we can start the searching from the previous position.
+  int i, fl, winNb = (2 * hw) / step + 1;
+  unsigned long c=0, c_tmp=0, st, ed, tmp_st, tmp_ed;
+  float val_tmp;
+
+  for (ch_smt = chr_block_headsmt; ch_smt; ch_smt = ch_smt->next) {
+    printf("calculating reads on %s\n", ch_smt->chr);
+    for (ch_sig = chr_block_headsig_p; ch_sig; ch_sig = ch_sig->next) {
+      if (!strcmp(ch_smt->chr, ch_sig->chr)) break; //if the same chr is included in smt and sig
+    }
+
+    if (ch_sig == NULL) { //if chr in smt is not included in sig...
+      for (bs = ch_smt->bs_list; bs; bs = bs->next) {
+        for (i = 0; i < winNb; i++) {
+          arr[i * smtNb + c] = 0.0; //assigning value 0.0 if chr in smt is not included in sig. 
+          arr_a[i * smtNb + c] = 0.0; //assigning value 0.0 if chr in smt is not included in sig. 
+        }
+        c++; //counting up for each bs
+      }
+      continue;
+    }
+
+    c_tmp = c; //memory of c
+
+    //calculating for plus strand reads
+    j1_tmp = NULL; //the "marker" of signal position to speed up the calc. j1_tmp is the left most position for each bs.
+    for (bs = ch_smt->bs_list; bs; bs = bs->next) {
+      fl = 0; //init of flag
+      if (bs->strand == '-') {//if the summit is on minus strand
+        st = bs->ed - hw - win / 2; //start pos
+        ed = bs->ed - hw + win / 2; //end pos
+      } else {
+        st = bs->st - hw - win / 2; //start pos
+        ed = bs->st - hw + win / 2; //end pos
+      }
+      for (i = 0; i < winNb; i++) {
+        if (j1_tmp == NULL) {
+          for (j1 = ch_sig->sig_list; j1; j1=j1->next) { //here's the slowest part...
+            if (st < j1->ed && j1->st < ed) {
+              break; //if one of sig block is inside the win
+            } else if (j1->st >= ed) { //if there's no chance for j1 to overlap win
+              j1 = NULL;
+              break;
+            }
+          }
+        }
+        else {
+          for (j1 = j1_tmp; j1; j1=j1->next) { //here's the slowest part...
+            if (st < j1->ed && j1->st < ed) {
+              break; //if one of sig block is inside the win
+            } else if (j1->st >= ed) { //if there's no chance for j1 to overlap win
+              j1 = NULL;
+              break;
+            }
+          }
+        }
+
+        if (j1 == NULL) { //if the win is the right side of the most right sig block
+          if (bs->strand == '-') arr_a[(winNb -1 - i) * smtNb + c] = 0.0; //assigning value 0.0
+          else arr[i * smtNb + c] = 0.0; //assigning value 0.0
+          st += step;
+          ed += step;
+          continue;
+        }
+
+        if (j1_tmp == NULL) { //if j1_tmp is not set for the chr
+          j1_tmp = j1;
+          fl = 1;
+        }
+        else if (!fl && bs->strand != '-') { //if j1_tmp is not set for the bs (fl == 0) and the strand is not minus.
+          j1_tmp = j1;
+          fl = 1;
+        }
+
+        
+        val_tmp = 0;
+        for (;j1 ; j1 = j1->next) {
+          if (j1->st >= ed) break; //if the sig pos is out of the win
+          if (st > j1->st) tmp_st = st; //if st of sig block is up-stream pos of st
+          else tmp_st = j1->st;
+          if (j1->ed > ed) tmp_ed = ed; //if ed of sig block is down-stream pos of ed
+          else tmp_ed = j1->ed;
+          val_tmp += (j1->val) * (tmp_ed - tmp_st); //adding the val*len of sig block
+        }
+        if (bs->strand == '-') arr_a[(winNb -1 - i) * smtNb + c] = val_tmp / (float)win;
+        else arr[i * smtNb + c] = val_tmp / (float)win;
+        st += step;
+        ed += step;
+      }
+      c++; //counting up for each bs
+    } //bs
+
+    c = c_tmp; //memory of c
+    for (ch_sig = chr_block_headsig_m; ch_sig; ch_sig = ch_sig->next) {
+      if (!strcmp(ch_smt->chr, ch_sig->chr)) break; //if the same chr is included in smt and sig
+    }
+
+    //calculating for minus strand reads
+    j1_tmp = NULL; //the "marker" of signal position to speed up the calc. j1_tmp is the left most position for each bs.
+    for (bs = ch_smt->bs_list; bs; bs = bs->next) {
+      fl = 0; //init of flag
+      if (bs->strand == '-') {//if the summit is on minus strand
+        st = bs->ed - hw - win / 2; //start pos
+        ed = bs->ed - hw + win / 2; //end pos
+      } else {
+        st = bs->st - hw - win / 2; //start pos
+        ed = bs->st - hw + win / 2; //end pos
+      }
+      for (i = 0; i < winNb; i++) {
+        if (j1_tmp == NULL) {
+          for (j1 = ch_sig->sig_list; j1; j1=j1->next) { //here's the slowest part...
+            if (st < j1->ed && j1->st < ed) {
+              break; //if one of sig block is inside the win
+            } else if (j1->st >= ed) { //if there's no chance for j1 to overlap win
+              j1 = NULL;
+              break;
+            }
+          }
+        }
+        else {
+          for (j1 = j1_tmp; j1; j1=j1->next) { //here's the slowest part...
+            if (st < j1->ed && j1->st < ed) {
+              break; //if one of sig block is inside the win
+            } else if (j1->st >= ed) { //if there's no chance for j1 to overlap win
+              j1 = NULL;
+              break;
+            }
+          }
+        }
+
+        if (j1 == NULL) { //if the win is the right side of the most right sig block
+          if (bs->strand == '-') arr[(winNb -1 - i) * smtNb + c] = 0.0; //assigning value 0.0
+          else arr_a[i * smtNb + c] = 0.0; //assigning value 0.0
+          st += step;
+          ed += step;
+          continue;
+        }
+
+        if (j1_tmp == NULL) { //if j1_tmp is not set for the chr
+          j1_tmp = j1;
+          fl = 1;
+        }
+        else if (!fl && bs->strand != '-') { //if j1_tmp is not set for the bs (fl == 0) and the strand is not minus.
+          j1_tmp = j1;
+          fl = 1;
+        }
+        
+        val_tmp = 0;
+        for (;j1 ; j1 = j1->next) {
+          if (j1->st >= ed) break; //if the sig pos is out of the win
+          if (st > j1->st) tmp_st = st; //if st of sig block is up-stream pos of st
+          else tmp_st = j1->st;
+          if (j1->ed > ed) tmp_ed = ed; //if ed of sig block is down-stream pos of ed
+          else tmp_ed = j1->ed;
+          val_tmp += (j1->val) * (tmp_ed - tmp_st); //adding the val*len of sig block
+        }
+        if (bs->strand == '-') arr[(winNb -1 - i) * smtNb + c] = val_tmp / (float)win;
+        else arr_a[i * smtNb + c] = val_tmp / (float)win;
+        st += step;
+        ed += step;
+      }
+      c++; //counting up for each bs
+    } //bs
+
+  } //chr
+
+  return;
+}
 
 
 
