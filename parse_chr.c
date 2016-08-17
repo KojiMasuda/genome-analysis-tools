@@ -86,7 +86,7 @@ err:
  * *chr_block_head_ori: pointer to struct chr_block original of which summit number is used for picking up random positions.
  * *chr_table         : pointer to struct chr_block genome table to know the length of each chr.
  */
-void ga_parse_chr_bs_rand (struct chr_block **chr_block_head, struct chr_block *chr_block_head_ori, struct chr_block *chr_table)
+void ga_parse_chr_bs_rand (struct chr_block **chr_block_head, struct chr_block *chr_block_head_ori, struct chr_block *chr_table, int hw)
 {
   unsigned long i;
   int rvalue;
@@ -108,7 +108,7 @@ void ga_parse_chr_bs_rand (struct chr_block **chr_block_head, struct chr_block *
 
     chr_block_add (ch->chr, chr_block_head); //adding chr link list (if the chr is already linked, the input chr is just ignored)
     for (i=0; i < ch->bs_nb; i++) {
-      rvalue = (rand()) % c_table->bs_list->st + 1; //rvalue must be 1-chr length
+      rvalue = (rand()) % (c_table->bs_list->st - hw) + hw + 1; //rvalue must be 1-chr length
       if (rvalue % 2) {
         bs_add (ch->chr, chr_block_head, rvalue, rvalue, '+', "."); //adding bs
       }
@@ -369,7 +369,7 @@ void ga_parse_sepwiggz (const char *filename, struct chr_block **chr_block_head)
   FILE *fp = NULL;
 
   sprintf(tmpfile,"/tmp/ls%d.tmp",getpid()); //tmp file
-  sprintf(str,"ls -1 %s*.wig.gz > %s", filename, tmpfile); //list of wig.gz file is written in tmp file
+  sprintf(str,"ls -1 %s_*.wig.gz > %s", filename, tmpfile); //list of wig.gz file is written in tmp file
   if(system(str) == -1) {
     LOG("error: system error for 'ls -1 filename*.wig.gz > tmpfile'");
     goto err;
