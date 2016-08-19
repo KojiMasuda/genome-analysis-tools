@@ -1,6 +1,6 @@
 /*
  * This program is one of the genome analysis tools.
- * This program alculate read distributions around summit or specific position such as TSS (Transcription Start Site).
+ * This program alculate the average read distribution around summit or specific position such as TSS (Transcription Start Site).
  * See usage for detail.
  */
 
@@ -19,14 +19,14 @@
   "%s:line%d:%s(): " m "\n", \
   __FILE__, __LINE__, __FUNCTION__)
 
-static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], unsigned long smtNb, int hw, int step, int win);
-static void sig_count_anti (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig_p, struct chr_block *chr_block_headsig_m, float arr[], float arr_a[], unsigned long smtNb, int hw, int step, int win);
+static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], long smtNb, int hw, int step, int win);
+static void sig_count_anti (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig_p, struct chr_block *chr_block_headsig_m, float arr[], float arr_a[], long smtNb, int hw, int step, int win);
 
 static void usage()
 {
   printf("Tool:    genome analysis\n\n\
 Program: ga_reads_summit\n\
-Summary: report the distribution of signals around summits\n\n\
+Summary: report the average distribution of signals around summits\n\n\
 Usage:   ga_reads_summit [options] --smt <file_summit> --sig <file_signal> --sigfmt <sig format:bedgraph | sepwiggz | onewiggz>\n\n\
 Options:\n\
          -v: output version information and exit.\n\
@@ -112,12 +112,12 @@ int main (int argc, char *argv[])
   struct output *output_head_a = NULL; //for output
   struct output *output_headr_a = NULL; //for output
 
-  int rel, i, c, r;
+  int rel, i, r;
   float t, t2, mu_x, mu_y, ustd_y, var_x, var_y, var_xy;
   float *arr=NULL, *arr_tmp=NULL, *arr_d=NULL, *arr_tmp_d=NULL, *arr_a, *arr_tmp_a;
   float *arr_r=NULL, *arr_r_tmp=NULL, *arr_r_d=NULL, *arr_r_d_tmp=NULL, *arr_r_a=NULL, *arr_r_a_tmp=NULL;
 
-  unsigned long smtNb;
+  long smtNb, c;
 
   /*path, filename, and extension*/
   char path_smt[PATH_STR_LEN];
@@ -180,7 +180,7 @@ time:                            %s\n",\
 
 
   smtNb = ga_count_peaks (chr_block_headsmt); //counting smt number
-  printf("smtnb:%lu\n", smtNb);
+  printf("smtnb:%ld\n", smtNb);
 
   //allocating arrays
   arr = (float*)malloc((((2 * hw) / step + 1) * smtNb)*sizeof(float)); //output arr, 1d
@@ -277,7 +277,7 @@ time:                            %s\n",\
         goto err;
       }
 
-      if (sprintf(ga_line_out, "%d\t%f\t%f\t%f\t%lu\t%s\t%s\n", rel, mu_y / mu_x,\
+      if (sprintf(ga_line_out, "%d\t%f\t%f\t%f\t%ld\t%s\t%s\n", rel, mu_y / mu_x,\
          ((mu_x*mu_y - t2*var_xy)+sqrt((mu_x*mu_y - t2*var_xy)*(mu_x*mu_y - t2*var_xy)-(mu_x*mu_x - t2*var_x)*(mu_y*mu_y - t2*var_y))) / ((mu_x*mu_x) - t2*var_x),\
          ((mu_x*mu_y - t2*var_xy)-sqrt((mu_x*mu_y - t2*var_xy)*(mu_x*mu_y - t2*var_xy)-(mu_x*mu_x - t2*var_x)*(mu_y*mu_y - t2*var_y))) / ((mu_x*mu_x) - t2*var_x),\
           smtNb, fn_smt, fn_sig) == EOF) {
@@ -286,7 +286,7 @@ time:                            %s\n",\
       }
     }
     else { //if no denominator
-      if (sprintf(ga_line_out, "%d\t%f\t%f\t%f\t%lu\t%s\t%s\n", rel, mu_y, mu_y + t*ustd_y/sqrt(smtNb), mu_y - t*ustd_y/sqrt(smtNb), smtNb, fn_smt, fn_sig) == EOF) {
+      if (sprintf(ga_line_out, "%d\t%f\t%f\t%f\t%ld\t%s\t%s\n", rel, mu_y, mu_y + t*ustd_y/sqrt(smtNb), mu_y - t*ustd_y/sqrt(smtNb), smtNb, fn_smt, fn_sig) == EOF) {
         LOG("error: the summit name or signal name is too long.");
         goto err;
       }
@@ -313,7 +313,7 @@ time:                            %s\n",\
       mu_y = ga_mean (arr_tmp_a, smtNb); //mean for each win
       ustd_y = ga_ustd (arr_tmp_a, smtNb); //unbiased standard deviation
 
-      if (sprintf(ga_line_out, "%d\t%f\t%f\t%f\t%lu\t%s\t%s\n", rel, mu_y, mu_y + t*ustd_y/sqrt(smtNb), mu_y - t*ustd_y/sqrt(smtNb), smtNb, fn_smt, fn_sig) == EOF) {
+      if (sprintf(ga_line_out, "%d\t%f\t%f\t%f\t%ld\t%s\t%s\n", rel, mu_y, mu_y + t*ustd_y/sqrt(smtNb), mu_y - t*ustd_y/sqrt(smtNb), smtNb, fn_smt, fn_sig) == EOF) {
         LOG("error: the summit name or signal name is too long.");
         goto err;
       }
@@ -372,7 +372,7 @@ time:                            %s\n",\
       chr_block_headr = NULL; //
     }
 
-    ga_parse_chr_bs_rand (&chr_block_headr, chr_block_headsmt, chr_block_headg); //picking up random positions
+    ga_parse_chr_bs_rand (&chr_block_headr, chr_block_headsmt, chr_block_headg, hw); //picking up random positions
 
     chr_block_headr = ga_mergesort_chr(chr_block_headr);
     for (ch = chr_block_headr; ch; ch = ch -> next) {
@@ -424,12 +424,12 @@ time:                            %s\n",\
         arr_r_d_tmp[r] = arr_r_d[i * randnb + r]; //choosing signal for each win by counting r = randnb.
       mu_x = ga_mean (arr_r_d_tmp, randnb); //mean for each win
 
-      if (sprintf(ga_line_out, "%d\t%f\t%f\t%f\t%lu\trandom\t%s\n", rel, mu_y / mu_x, mu_y / mu_x, mu_y / mu_x, smtNb, fn_sig) == EOF) {
+      if (sprintf(ga_line_out, "%d\t%f\t%f\t%f\t%ld\trandom\t%s\n", rel, mu_y / mu_x, mu_y / mu_x, mu_y / mu_x, smtNb, fn_sig) == EOF) {
         LOG("error: the summit name or signal name is too long.");
         goto err;
       }
     } else {
-      if (sprintf(ga_line_out, "%d\t%f\t%f\t%f\t%lu\trandom\t%s\n", rel, mu_y, mu_y, mu_y, smtNb, fn_sig) == EOF) {
+      if (sprintf(ga_line_out, "%d\t%f\t%f\t%f\t%ld\trandom\t%s\n", rel, mu_y, mu_y, mu_y, smtNb, fn_sig) == EOF) {
         LOG("error: the summit name or signal name is too long.");
         goto err;
       }
@@ -441,7 +441,7 @@ time:                            %s\n",\
         arr_r_a_tmp[r] = arr_r_a[i * randnb + r]; //choosing signal for each win by counting r = randnb.
       mu_y = ga_mean (arr_r_a_tmp, randnb); //mean for each win
 
-      if (sprintf(ga_line_out, "%d\t%f\t%f\t%f\t%lu\trandom\t%s\n", rel, mu_y, mu_y, mu_y, smtNb, fn_sig) == EOF) {
+      if (sprintf(ga_line_out, "%d\t%f\t%f\t%f\t%ld\trandom\t%s\n", rel, mu_y, mu_y, mu_y, smtNb, fn_sig) == EOF) {
         LOG("error: the summit name or signal name is too long.");
         goto err;
       }
@@ -519,13 +519,13 @@ err:
 
 //the structure of arr is [win1:peak1,peak2...peakN|win2:peak1,peak2...peakN|...|winN:peak1,peak2...peakN]
 //the structure of arr_r is [r1:peak1,peak2...peakN|r2:peak1,peak2...peakN|...|rN:peak1,peak2...peakN]
-static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], unsigned long smtNb, int hw, int step, int win)
+static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], long smtNb, int hw, int step, int win)
 {
   struct chr_block *ch_smt, *ch_sig;
   struct bs *bs;
   struct sig *j1, *j1_tmp = NULL; //j1 is the pointer to chr_block_headsig which is counted in the window. j1_tmp is the 'memory' of j1 which act as the marker of the previous position of j1 to speed up the calculation. Thanks to j1_tmp, we don't have to search the signal position of 1 for each chr, rather we can start the searching from the previous position.
   int i, fl, winNb = (2 * hw) / step + 1;
-  unsigned long c=0, st, ed, tmp_st, tmp_ed;
+  long c=0, st, ed, tmp_st, tmp_ed;
   float val_tmp;
 
   for (ch_smt = chr_block_headsmt; ch_smt; ch_smt = ch_smt->next) {
@@ -613,13 +613,13 @@ static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *ch
 }
 
 
-static void sig_count_anti (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig_p, struct chr_block *chr_block_headsig_m, float arr[], float arr_a[], unsigned long smtNb, int hw, int step, int win)
+static void sig_count_anti (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig_p, struct chr_block *chr_block_headsig_m, float arr[], float arr_a[], long smtNb, int hw, int step, int win)
 {
   struct chr_block *ch_smt, *ch_sig;
   struct bs *bs;
   struct sig *j1, *j1_tmp = NULL; //j1 is the pointer to chr_block_headsig which is counted in the window. j1_tmp is the 'memory' of j1 which act as the marker of the previous position of j1 to speed up the calculation. Thanks to j1_tmp, we don't have to search the signal position of 1 for each chr, rather we can start the searching from the previous position.
   int i, fl, winNb = (2 * hw) / step + 1;
-  unsigned long c=0, c_tmp=0, st, ed, tmp_st, tmp_ed;
+  long c=0, c_tmp=0, st, ed, tmp_st, tmp_ed;
   float val_tmp;
 
   for (ch_smt = chr_block_headsmt; ch_smt; ch_smt = ch_smt->next) {
