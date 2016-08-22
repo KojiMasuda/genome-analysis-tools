@@ -292,7 +292,7 @@ time:                            %s\n",\
       }
     }
 
-    ga_output_add (&output_head, ga_line_out);
+    ga_output_add (&output_head, ga_line_out); //caution: the order is reversed
     rel -= step;
   }
 
@@ -318,7 +318,7 @@ time:                            %s\n",\
         goto err;
       }
 
-      ga_output_add (&output_head_a, ga_line_out);
+      ga_output_add (&output_head_a, ga_line_out); //caution: the order is reversed
       rel -= step;
     }
 
@@ -434,7 +434,7 @@ time:                            %s\n",\
         goto err;
       }
     }
-    ga_output_add (&output_headr, ga_line_out);
+    ga_output_add (&output_headr, ga_line_out); //caution: the order is reversed
 
     if (filesig_m) {
       for (r = 0; r < randnb; r++)
@@ -445,7 +445,7 @@ time:                            %s\n",\
         LOG("error: the summit name or signal name is too long.");
         goto err;
       }
-      ga_output_add (&output_headr_a, ga_line_out);
+      ga_output_add (&output_headr_a, ga_line_out); //caution: the order is reversed
     }
 
     rel -= step;

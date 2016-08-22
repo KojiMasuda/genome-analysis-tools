@@ -132,7 +132,7 @@ step size:                       %d\n\
 win size:                        %d\n\
 header flag:                     %d\n\
 time:                            %s\n",\
- "ga_reads_summit", filesmt, filesig, filesig_d, sigfmt, col_chr, col_st, col_ed, col_strand, hw, step, win, hf, ctime(&timer) );
+ "ga_reads_summit_all", filesmt, filesig, filesig_d, sigfmt, col_chr, col_st, col_ed, col_strand, hw, step, win, hf, ctime(&timer) );
 
   ga_parse_file_path (filesmt, path_smt, fn_smt, ext_smt); //parsing input file name into path, file name, and extension
   ga_parse_file_path (filesig, path_sig, fn_sig, ext_sig);
@@ -222,7 +222,7 @@ time:                            %s\n",\
         }
         strcat(ga_line_out, str_tmp); //concatenating val for each window
       }
-      ga_output_add (&output_head, ga_line_out);
+      ga_output_add (&output_head, ga_line_out); //caution: the order is reversed
     }
   } else {
     for (c = smtNb - 1; c >= 0 ; c--) {
@@ -240,7 +240,7 @@ time:                            %s\n",\
         }
         strcat(ga_line_out, str_tmp); //concatenating val for each window
       }
-      ga_output_add (&output_head, ga_line_out);
+      ga_output_add (&output_head, ga_line_out); //caution: the order is reversed
     }
   }
 

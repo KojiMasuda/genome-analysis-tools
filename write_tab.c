@@ -15,7 +15,7 @@ static void get_path (char *str, const char *delim, char *path, size_t path_len,
 
 /*pointer which must be freed: struct output *p, p->line */
 /*
- * This adds the new struct output list
+ * This adds the new struct output list(bottom is head, top is tail direction...)
  * **out_head: pointer of pointer to struct ouput head list
  * *line: pointer to output line
  */
@@ -34,6 +34,37 @@ struct output *ga_output_add (struct output **out_head, const char *line)
   *out_head = p;
 
   return (p);
+}
+
+/*pointer which must be freed: struct output *p, p->line */
+/*
+ * This appends the new struct output list(bottom is tail, top is head direction!)
+ * **out_head: pointer of pointer to struct ouput head list
+ * *line: pointer to output line
+ */
+void ga_output_append (struct output **out_head, const char *line)
+{
+  struct output *p;
+  
+  p = malloc(sizeof(struct output));
+  if (p == NULL) {
+    LOG("error: lack of memory.");
+    return;
+  }
+  p -> line = strdup(line);
+
+  if (*out_head == NULL) { //if the line is the first one
+    *out_head = p;
+  } else {
+//    (**out_head).tail -> next = p; //can be
+    (*out_head) -> tail -> next = p; //if not parenthesis, *out_head -> tail means "tail pointer" of "pointer of pointer out_head", not "tail pointer" of "pointer of *outhead"
+  }
+
+//  (**out_head).tail = p; //can be
+  (*out_head) -> tail = p;
+  p -> next = NULL;
+
+  return;
 }
 
 /*

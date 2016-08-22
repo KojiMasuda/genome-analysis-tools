@@ -17,9 +17,11 @@
 struct output {
   char *line;
   struct output *next;
+  struct output *tail; //pointer to the tail, for appending a link
 };
 
-struct output *ga_output_add (struct output **out_head, const char *line);
+struct output *ga_output_add (struct output **out_head, const char *line); //caution: the order is reversed
+void ga_output_append (struct output **out_head, const char *line);
 void ga_free_output (struct output **out_head);
 void ga_parse_file_path (char *file_path, char *pathp, char *fnp, char *extp);
 void ga_write_lines (const char *output, struct output *out_head, const char *header);

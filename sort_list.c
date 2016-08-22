@@ -117,11 +117,15 @@ static struct bs *merge_bs(struct bs *a, struct bs *b)
       }
   }
 
-  if (a == NULL)
+  if (a == NULL) {
     x->next = b;
-  else
+    b->prev = x; //test code...
+  } else {
     x->next = a;
+    a->prev = x; //test code...
+  }
 
+  head.next->prev = NULL; //test code...
   return head.next;
 }
 
@@ -144,11 +148,15 @@ static struct sig *merge_sig(struct sig *a, struct sig *b)
       }
   }
 
-  if (a == NULL)
+  if (a == NULL) {
     x->next = b;
-  else
+    b->prev = x; //test code...
+  } else {
     x->next = a;
+    a->prev = x; //test code...
+  }
 
+  head.next->prev = NULL; //test code...
   return head.next;
 }
 

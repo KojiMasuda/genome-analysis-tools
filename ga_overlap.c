@@ -124,9 +124,12 @@ time:                            %s\n",\
     }
     if (ch2 == NULL) { //if chr_block2 doesn't have ch1
       for (bs_nonov = ch1->bs_list; bs_nonov; bs_nonov = bs_nonov->next) {
-        ga_output_add (&nonov_head, bs_nonov->line);
-        if (add_one_val(ga_line_out, bs_nonov->line, "NonOver\n") < 0) goto err; //making output link list with flag
-        ga_output_add(&output_head, ga_line_out);
+        ga_output_add (&nonov_head, bs_nonov->line); //caution: the order is reversed 
+        if (add_one_val(ga_line_out, bs_nonov->line, "NonOver\n") < 0) {
+          LOG("error: output line was too long.");
+          goto err; //making output link list with flag
+        }
+        ga_output_add(&output_head, ga_line_out); //caution: the order is reversed
         totnb += 1.0; //total peak number
         novnb += 1.0; //non-overlapping peak number
       }
@@ -144,7 +147,10 @@ time:                            %s\n",\
 
   sprintf(output_name, "%s%s_vs_%s%s", path1, fn1, fn2, ext1);
   if (ga_header_line != NULL) { //if header line
-    if (add_one_val(ga_line_out, ga_header_line, "overlap_flag\n") < 0) goto err; //adding one extra column
+    if (add_one_val(ga_line_out, ga_header_line, "overlap_flag\n") < 0) {
+      LOG("error: output line was too long.");
+      goto err; //adding one extra column
+    }
     ga_write_lines (output_name, output_head, ga_line_out); //note that header is line_out, not ga_header_line
   }
   else ga_write_lines (output_name, output_head, ga_header_line);
@@ -177,6 +183,13 @@ time:                            %s\n",\
   return 0;
 
 err:
+  if (ga_header_line) free(ga_header_line);
+  if (chr_block_head1) ga_free_chr_block(&chr_block_head1);
+  if (chr_block_head2) ga_free_chr_block(&chr_block_head2);
+
+  if (output_head) ga_free_output(&output_head);
+  if (ov_head) ga_free_output(&ov_head);
+  if (nonov_head) ga_free_output(&nonov_head);
   return -1;
 }
 
@@ -196,17 +209,17 @@ static void cmp_overlap (struct bs *bs1, struct bs *bs2, struct output **output_
   for (i = bs1; i; i = i->next) {
     for (j = bs2; j; j = j->next) {
       if (i->ed >= j->st && i->st <= j->ed) { //checking the overlapping
-        ga_output_add(ov_head, i->line);
+        ga_output_add(ov_head, i->line); //caution: the order is reversed
         if (add_one_val(ga_line_out, i->line, "Over\n") < 0) goto err;
-        ga_output_add(output_head, ga_line_out);
+        ga_output_add(output_head, ga_line_out); //caution: the order is reversed
         ovnb += 1.0; //overlapping peak number
         break;
       }
     }
     if (j == NULL) { //if i is not overlapped with any bs2
-      ga_output_add(nonov_head, i->line);
+      ga_output_add(nonov_head, i->line); //caution: the order is reversed
       if (add_one_val(ga_line_out, i->line, "NonOver\n") < 0) goto err;
-      ga_output_add(output_head, ga_line_out);
+      ga_output_add(output_head, ga_line_out); //caution: the order is reversed
       novnb += 1.0; //non-overlapping peak number
     }
     totnb += 1.0; //total peak number

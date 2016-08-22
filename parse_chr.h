@@ -56,7 +56,7 @@ struct sig {
 extern char *ga_header_line;
 
 void ga_parse_chr_bs (const char *filename, struct chr_block **chr_block_head, int col_chr, int col_st, int col_ed, int col_strand, int hf);
-void ga_parse_chr_bs_rand (struct chr_block **chr_block_head, struct chr_block *chr_block_head_ori, struct chr_block *chr_table);
+void ga_parse_chr_bs_rand (struct chr_block **chr_block_head, struct chr_block *chr_block_head_ori, struct chr_block *chr_table, int hw);
 void ga_parse_bedgraph (const char *filename, struct chr_block **chr_block_head);
 void ga_parse_sepwiggz (const char *filename, struct chr_block **chr_block_head);
 void ga_parse_onewiggz (const char *filename, struct chr_block **chr_block_head);
