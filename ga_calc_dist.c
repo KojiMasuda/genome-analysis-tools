@@ -18,7 +18,6 @@
   "%s:line%d:%s(): " m "\n", \
   __FILE__, __LINE__, __FUNCTION__)
 
-//static void cmp_overlap (struct bs *bs1, struct bs *bs2, struct output **output_head, struct output **ov_head, struct output **nonov_head);
 static void cmp_two_peaks (struct bs *bs1, struct bs *bs2, struct output **output_head);
 static int add_one_val (char line_out[], const char *line, const char *val);
 
@@ -26,8 +25,9 @@ static void usage()
 {
   printf("Tool:    genome analysis\n\n\
 Program: ga_calc_dist\n\
-Summary: report the distance of two peaks or inter-summit distance(not supported yet...)\n\n\
-Usage:   ga_calc_dist [options] -1 <file1> -2 <file2> -mode <two>\n\n\
+Summary: report the distance of two peaks(mode:two) or inter-summit distance(mode:isd)\n\n\
+Usage:   ga_calc_dist [options] -1 <file1> -2 <file2> -mode two\n\
+  or:    ga_calc_dist [options] -1 <file1> -mode isd\n\n\
 Options:\n\
          -v: output version information and exit.\n\
          -h, --help: display this help and exit.\n\
@@ -50,8 +50,6 @@ static char *file1 = NULL;
 static char *file2 = NULL;
 static char *mode = NULL;
 static int col_chr1 = 0, col_chr2 = 0;
-/*static int col_st1 = 1, col_st2 = 1;
-static int col_ed1 = 2, col_ed2 = 2; */
 static int col_smt1 = 3, col_smt2 = 3;
 char *ga_header_line = NULL; //header line. Note this is global variable
 static char ga_line_out[LINE_STR_LEN]; //output line with overlapping flag
@@ -80,7 +78,7 @@ int main (int argc, char *argv[])
   struct output *output_head = NULL; //for output
 
   struct chr_block *ch1, *ch2; //for "for loop of chr"
-  struct bs *bs_nonov; //for bs of file1 of which chr is not in file2
+  struct bs *bs_nonov, *bs1; //for bs of file1 of which chr is not in file2 and for loop
 
   /*path, filename, and extension*/
   char path1[PATH_STR_LEN];
@@ -143,12 +141,6 @@ time:                            %s\n",\
     ga_parse_file_path (file1, path1, fn1, ext1); //parsing input file name into path, file name, and extension
     ga_parse_file_path (file2, path2, fn2, ext2);
 
-/*    sprintf(output_name, "%s%s_over_%s%s", path1, fn1, fn2, ext1); //concatenating output file name
-    ga_write_lines (output_name, ov_head, ga_header_line); //writing overlapping peaks
-
-    sprintf(output_name, "%s%s_nonover_%s%s", path1, fn1, fn2, ext1); //concatenating output file name
-    ga_write_lines (output_name, nonov_head, ga_header_line); //writing non-overlapping peaks */
-
     sprintf(output_name, "%s%s_closest_%s%s", path1, fn1, fn2, ext1);
     if (ga_header_line != NULL) { //if header line
       if (add_one_val(ga_line_out, ga_header_line, "dist\tsummit2\n") < 0){
@@ -158,23 +150,6 @@ time:                            %s\n",\
       ga_write_lines (output_name, output_head, ga_line_out); //note that header is line_out, not ga_header_line
     }
     else ga_write_lines (output_name, output_head, ga_header_line);
-/*
-    sprintf(output_name, "%s%s_vs_%s_summary.txt", path1, fn1, fn2); //concatenating output file name
-    if ((fp = fopen(output_name, "w")) == NULL) {
-      LOG("error: output file cannot be open.");
-      goto err;
-    }
-    sprintf(ga_line_out, "name\ttotal\tOver\tNonOver\n");
-    if (fputs(ga_line_out, fp) == EOF) {
-      LOG("error: file writing error.");
-      goto err;
-    }
-    sprintf(ga_line_out, "%s\t%d\t%d(%.3f)\t%d(%.3f)\n", fn1, (int)totnb, (int)ovnb, ovnb/totnb, (int)novnb, novnb/totnb);
-    if (fputs(ga_line_out, fp) == EOF) {
-      LOG("error: file writing error.");
-      goto err;
-    }
-    fclose(fp); */
 
     if (ga_header_line) free(ga_header_line);
     ga_free_chr_block(&chr_block_head1);
@@ -183,7 +158,37 @@ time:                            %s\n",\
     ga_free_output(&output_head);
 
     return 0;
-  } //mode == two
+  } else if (!strcmp(mode, "isd")) { //mode == two or mode == isd
+    ga_parse_chr_bs(file1, &chr_block_head1, col_chr1, col_smt1, col_smt1, -1, hf); //parsing each binding sites for each chromosome without strand info
+
+    chr_block_head1 = ga_mergesort_chr(chr_block_head1); //sorting chr block
+
+    for (ch1 = chr_block_head1; ch1; ch1 = ch1 -> next) { //sorting bs
+      ch1 -> bs_list = ga_mergesort_bs(ch1 -> bs_list);
+    }
+
+    for (ch1 = chr_block_head1; ch1; ch1 = ch1->next) {
+      for (bs1 = ch1->bs_list; bs1; bs1 = bs1->next) {
+        if (bs1->next == NULL) break; //if the bs is the tail one
+        sprintf(ga_line_out, "%s\t%lu\n", ch1->chr, bs1->next->st - bs1->st);
+        ga_output_append(&output_head, ga_line_out);
+      }
+    }
+
+    ga_parse_file_path (file1, path1, fn1, ext1); //parsing input file name into path, file name, and extension
+
+    sprintf(output_name, "%s%s_ISD%s", path1, fn1, ext1);
+    ga_write_lines (output_name, output_head, "chromosome\tInter_Summit_Distance\n");
+
+    if (ga_header_line) free(ga_header_line);
+    ga_free_chr_block(&chr_block_head1);
+    ga_free_output(&output_head);
+
+    return 0;
+  } else { //mode == two or isd
+    printf("error: input correct mode 'two' or 'isd'. Your mode was: %s.\n", mode);
+    goto err;
+  }
 
 err:
   if (ga_header_line) free(ga_header_line);
