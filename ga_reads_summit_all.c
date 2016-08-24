@@ -1,6 +1,6 @@
 /*
  * This program is one of the genome analysis tools.
- * This program alculate read distributions around ALL summits or specific positions such as TSS (Transcription Start Site).
+ * This program calculates read distributions around ALL summits or specific positions such as TSS (Transcription Start Site).
  * See usage for detail.
  */
 
@@ -19,7 +19,7 @@
   "%s:line%d:%s(): " m "\n", \
   __FILE__, __LINE__, __FUNCTION__)
 
-static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], long smtNb, int hw, int step, int win);
+static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], const long smtNb, const int hw, const int step, const int win);
 
 static void usage()
 {
@@ -389,7 +389,7 @@ err:
 
 //the structure of arr is [win1:peak1,peak2...peakN|win2:peak1,peak2...peakN|...|winN:peak1,peak2...peakN]
 //the structure of arr_r is [r1:peak1,peak2...peakN|r2:peak1,peak2...peakN|...|rN:peak1,peak2...peakN]
-static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], long smtNb, int hw, int step, int win)
+static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], const long smtNb, const int hw, const int step, const int win)
 {
   struct chr_block *ch_smt, *ch_sig;
   struct bs *bs;
@@ -452,7 +452,7 @@ static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *ch
           continue;
         }
 
-        if (j1_tmp == NULL) { //if j1_tmp is not set for the chr
+        if (j1_tmp == NULL && bs->strand != '-') { //if j1_tmp is not set for the chr and the strand is not minus.
           j1_tmp = j1;
           fl = 1;
         }
