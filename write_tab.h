@@ -25,5 +25,6 @@ void ga_output_append (struct output **out_head, const char *line);
 void ga_free_output (struct output **out_head);
 void ga_parse_file_path (char *file_path, char *pathp, char *fnp, char *extp);
 void ga_write_lines (const char *output, struct output *out_head, const char *header);
+int add_one_val (char line_out[], const char *line, const char *val);
 
 #endif

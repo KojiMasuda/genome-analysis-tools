@@ -8,7 +8,6 @@
 #include "write_tab.h"
 #include "sort_list.h"
 #include "argument.h"
-#include "ga_math.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -170,12 +169,14 @@ time:                            %s\n",\
   arr = (float*)malloc((((2 * hw) / step + 1) * smtNb)*sizeof(float)); //output arr, 1d
   if (arr == NULL) {
     LOG("error: lack of memory.");
+    goto err;
   }
 
   if (filesig_d) {//if denominator
     arr_d = (float*)malloc((((2 * hw) / step + 1) * smtNb)*sizeof(float)); //output arr, 1d
     if (arr_d == NULL) {
       LOG("error: lack of memory.");
+      goto err;
     }
   }
 

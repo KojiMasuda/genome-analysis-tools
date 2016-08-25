@@ -6,6 +6,8 @@
  */
 
 #include "write_tab.h"
+#include "parse_chr.h"
+
 #define LOG(m) \
   fprintf(stderr, \
   "%s:line%d:%s(): " m "\n", \
@@ -86,7 +88,12 @@ void ga_parse_file_path (char *file_path, char *path, char *fn, char *ext)
   memset(tmp, '\0', FILE_STR_LEN * sizeof(char));
 
   get_path (file_path, "/", path, PATH_STR_LEN, tmp, FILE_STR_LEN); //getting path
-  get_path (tmp, ".", fn, FILE_STR_LEN, ext, EXT_STR_LEN); //getting filename and extension
+  if (strchr(tmp, '.') == NULL) { //if . is not found in tmp(file name)
+    strcpy(fn, tmp);
+    return; //no ext
+  } else {
+    get_path (tmp, ".", fn, FILE_STR_LEN, ext, EXT_STR_LEN); //getting filename and extension
+  }
 
   fn[strlen(fn) - 1] = '\0'; //deleting the last '.'
   for (i = 0; i < strlen(ext); i++) { //converting "txt" into ".txt"
@@ -189,6 +196,25 @@ void ga_write_lines (const char *output, struct output *out_head, const char *he
 
 err:
   return;
+}
+
+/*
+ * This function add one more value to string. If line_out[xxx], line = "aaa\tbbb\n", val = "ccc\n", line_out is "aaa\tbbb\tccc\n".
+ * line_out[]: char array. This must have size of LINE_STR_LEN.
+ * *line: pointer to char to be added.
+ * *val: pointer to char for adding. Put '\n' at the last position if you need.
+ */
+int add_one_val (char line_out[], const char *line, const char *val)
+{
+  sprintf(line_out, "%s", line);
+  line_out[strlen(line_out) - 1] = '\t';
+  if (strlen(line_out) + strlen(val) + 1 < LINE_STR_LEN) strncat(line_out, val, strlen(val));
+  else {
+    LOG("error: the output line length is too long.");
+    return -1;
+  }
+
+  return 0;
 }
 
 /*

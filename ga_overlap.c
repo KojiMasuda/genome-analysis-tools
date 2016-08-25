@@ -20,7 +20,7 @@
   __FILE__, __LINE__, __FUNCTION__)
 
 static void cmp_overlap (struct bs *bs1, struct bs *bs2, struct output **output_head, struct output **ov_head, struct output **nonov_head);
-static int add_one_val (char line_out[], const char *line, const char *val);
+//static int add_one_val (char line_out[], const char *line, const char *val);
 
 static void usage()
 {
@@ -236,7 +236,7 @@ err:
  * *line: pointer to char to be added.
  * *val: pointer to char for adding. Put '\n' at the last position if you need.
  */
-static int add_one_val (char line_out[], const char *line, const char *val)
+/*static int add_one_val (char line_out[], const char *line, const char *val)
 {
   sprintf(line_out, "%s", line);
   line_out[strlen(line_out) - 1] = '\t';
@@ -247,5 +247,5 @@ static int add_one_val (char line_out[], const char *line, const char *val)
   }
 
   return 0;
-}
+} */
 

@@ -186,20 +186,24 @@ time:                            %s\n",\
   arr = (float*)malloc((((2 * hw) / step + 1) * smtNb)*sizeof(float)); //output arr, 1d
   if (arr == NULL) {
     LOG("error: lack of memory.");
+    goto err;
   }
   arr_tmp = (float*)malloc(smtNb*sizeof(float)); //output arr, 1d
   if (arr_tmp == NULL) {
     LOG("error: lack of memory.");
+    goto err;
   }
 
   if (filesig_d) {//if denominator
     arr_d = (float*)malloc((((2 * hw) / step + 1) * smtNb)*sizeof(float)); //output arr, 1d
     if (arr_d == NULL) {
       LOG("error: lack of memory.");
+      goto err;
     }
     arr_tmp_d = (float*)malloc(smtNb*sizeof(float)); //output arr, 1d
     if (arr_tmp_d == NULL) {
       LOG("error: lack of memory.");
+      goto err;
     }
   }
 
@@ -224,10 +228,12 @@ time:                            %s\n",\
     arr_a = (float*)malloc((((2 * hw) / step + 1) * smtNb)*sizeof(float)); //output arr, 1d
     if (arr_a == NULL) {
       LOG("error: lack of memory.");
+      goto err;
     }
     arr_tmp_a = (float*)malloc(smtNb*sizeof(float)); //output arr, 1d
     if (arr_tmp_a == NULL) {
       LOG("error: lack of memory.");
+      goto err;
     }
     sig_count_anti (chr_block_headsmt, chr_block_headsig, chr_block_headsig_m, arr, arr_a, smtNb, hw, step, win); //counting the signal. This process is the heart of the program!
   } else {
@@ -336,20 +342,24 @@ time:                            %s\n",\
   arr_r = (float*)malloc((((2 * hw) / step + 1) * randnb)*sizeof(float)); //output arr, 1d
   if (arr_r == NULL) {
     LOG("error: lack of memory.");
+    goto err;
   }
   arr_r_tmp = (float*)malloc(randnb * sizeof(float)); //output arr, 1d
   if (arr_r_tmp == NULL) {
     LOG("error: lack of memory.");
+    goto err;
   }
 
   if (filesig_d) {
     arr_r_d = (float*)malloc((((2 * hw) / step + 1) * randnb)*sizeof(float)); //output arr, 1d
     if (arr_r_d == NULL) {
       LOG("error: lack of memory.");
+      goto err;
     }
     arr_r_d_tmp = (float*)malloc(randnb * sizeof(float)); //output arr, 1d
     if (arr_r_d_tmp == NULL) {
       LOG("error: lack of memory.");
+      goto err;
     }
   }
 
@@ -357,10 +367,12 @@ time:                            %s\n",\
     arr_r_a = (float*)malloc((((2 * hw) / step + 1) * randnb)*sizeof(float)); //output arr, 1d
     if (arr_r_a == NULL) {
       LOG("error: lack of memory.");
+      goto err;
     }
     arr_r_a_tmp = (float*)malloc(randnb * sizeof(float)); //output arr, 1d
     if (arr_r_a_tmp == NULL) {
       LOG("error: lack of memory.");
+      goto err;
     }
   }
 
