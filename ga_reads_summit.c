@@ -19,8 +19,10 @@
   "%s:line%d:%s(): " m "\n", \
   __FILE__, __LINE__, __FUNCTION__)
 
-static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], const long smtNb, const int hw, const int step, const int win);
-static void sig_count_anti (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig_p, struct chr_block *chr_block_headsig_m, float arr[], float arr_a[], const long smtNb, const int hw, const int step, const int win);
+//static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], const long smtNb, const int hw, const int step, const int win);
+//static void sig_count_anti (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig_p, struct chr_block *chr_block_headsig_m, float arr[], float arr_a[], const long smtNb, const int hw, const int step, const int win);
+static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], const long smtNb);
+static void sig_count_anti (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig_p, struct chr_block *chr_block_headsig_m, float arr[], float arr_a[], const long smtNb);
 
 static void usage()
 {
@@ -235,9 +237,9 @@ time:                            %s\n",\
       LOG("error: lack of memory.");
       goto err;
     }
-    sig_count_anti (chr_block_headsmt, chr_block_headsig, chr_block_headsig_m, arr, arr_a, smtNb, hw, step, win); //counting the signal. This process is the heart of the program!
+    sig_count_anti (chr_block_headsmt, chr_block_headsig, chr_block_headsig_m, arr, arr_a, smtNb); //counting the signal. This process is the heart of the program!
   } else {
-    sig_count (chr_block_headsmt, chr_block_headsig, arr, smtNb, hw, step, win); //counting the signal. This process is the heart of the program!
+    sig_count (chr_block_headsmt, chr_block_headsig, arr, smtNb); //counting the signal. This process is the heart of the program!
   }
 
   if (filesig_d) {//if denominator
@@ -256,7 +258,7 @@ time:                            %s\n",\
     for (ch = chr_block_headsig_d; ch; ch = ch -> next) {
       ch -> sig_list = ga_mergesort_sig(ch -> sig_list); //sorting sig
     }
-    sig_count (chr_block_headsmt, chr_block_headsig_d, arr_d, smtNb, hw, step, win);
+    sig_count (chr_block_headsmt, chr_block_headsig_d, arr_d, smtNb);
   }
 
   rel = hw; //relative pos
@@ -392,12 +394,12 @@ time:                            %s\n",\
     }
 
     if (filesig_m) {
-      sig_count_anti (chr_block_headr, chr_block_headsig, chr_block_headsig_m, arr, arr_a, smtNb, hw, step, win); //calculating signals around random postions
+      sig_count_anti (chr_block_headr, chr_block_headsig, chr_block_headsig_m, arr, arr_a, smtNb); //calculating signals around random postions
     } else {
-      sig_count (chr_block_headr, chr_block_headsig, arr, smtNb, hw, step, win); //calculating signals around random postions
+      sig_count (chr_block_headr, chr_block_headsig, arr, smtNb); //calculating signals around random postions
     }
     if (filesig_d)
-      sig_count (chr_block_headr, chr_block_headsig_d, arr_d, smtNb, hw, step, win);
+      sig_count (chr_block_headr, chr_block_headsig_d, arr_d, smtNb);
 
     for (i = 0; i < (2 * hw) / step + 1; i++) { //calculating mean
       for (c = 0; c < smtNb; c++)
@@ -531,7 +533,7 @@ err:
 
 //the structure of arr is [win1:peak1,peak2...peakN|win2:peak1,peak2...peakN|...|winN:peak1,peak2...peakN]
 //the structure of arr_r is [r1:peak1,peak2...peakN|r2:peak1,peak2...peakN|...|rN:peak1,peak2...peakN]
-static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], const long smtNb, const int hw, const int step, const int win)
+static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], const long smtNb)
 {
   struct chr_block *ch_smt, *ch_sig;
   struct bs *bs;
@@ -625,7 +627,7 @@ static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *ch
 }
 
 
-static void sig_count_anti (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig_p, struct chr_block *chr_block_headsig_m, float arr[], float arr_a[], const long smtNb, const int hw, const int step, const int win)
+static void sig_count_anti (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig_p, struct chr_block *chr_block_headsig_m, float arr[], float arr_a[], const long smtNb)
 {
   struct chr_block *ch_smt, *ch_sig;
   struct bs *bs;

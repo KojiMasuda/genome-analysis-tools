@@ -18,7 +18,8 @@
   "%s:line%d:%s(): " m "\n", \
   __FILE__, __LINE__, __FUNCTION__)
 
-static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], const long smtNb, const int hw, const int step, const int win);
+//static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], const long smtNb, const int hw, const int step, const int win);
+static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], const long smtNb);
 
 static void usage()
 {
@@ -35,7 +36,6 @@ Options:\n\
          --col_strand <int>: column number for strand of summit file (default:-1).\n\
          --header: <int> the header of summit file is preserved (default:0).\n\
          --gt: genome table file (default:NULL)\n\
-         --sig_minus: signal file from minus strand. With this argument, the program calculates not only sense reads, but also anti-sense reads. (default:NULL)\n\
          --sig_d: signal denominator file like input (default:NULL)\n\
          --hw: <int> half range size (default:1000)\n\
          --step: <int> step size (default: 10)\n\
@@ -180,7 +180,7 @@ time:                            %s\n",\
     }
   }
 
-  sig_count (chr_block_headsmt, chr_block_headsig, arr, smtNb, hw, step, win); //counting the signal. This process is the heart of the program!
+  sig_count (chr_block_headsmt, chr_block_headsig, arr, smtNb); //counting the signal. This process is the heart of the program!
 
   if (filesig_d) {//if denominator
     if (!strcmp(sigfmt, "bedgraph")) {
@@ -198,7 +198,7 @@ time:                            %s\n",\
     for (ch = chr_block_headsig_d; ch; ch = ch -> next) {
       ch -> sig_list = ga_mergesort_sig(ch -> sig_list); //sorting sig
     }
-    sig_count (chr_block_headsmt, chr_block_headsig_d, arr_d, smtNb, hw, step, win);
+    sig_count (chr_block_headsmt, chr_block_headsig_d, arr_d, smtNb);
   }
 
   if (filesig_d) {
@@ -390,7 +390,7 @@ err:
 
 //the structure of arr is [win1:peak1,peak2...peakN|win2:peak1,peak2...peakN|...|winN:peak1,peak2...peakN]
 //the structure of arr_r is [r1:peak1,peak2...peakN|r2:peak1,peak2...peakN|...|rN:peak1,peak2...peakN]
-static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], const long smtNb, const int hw, const int step, const int win)
+static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, float arr[], const long smtNb)
 {
   struct chr_block *ch_smt, *ch_sig;
   struct bs *bs;

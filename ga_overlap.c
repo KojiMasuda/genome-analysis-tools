@@ -19,8 +19,7 @@
   "%s:line%d:%s(): " m "\n", \
   __FILE__, __LINE__, __FUNCTION__)
 
-static void cmp_overlap (struct bs *bs1, struct bs *bs2, struct output **output_head, struct output **ov_head, struct output **nonov_head);
-//static int add_one_val (char line_out[], const char *line, const char *val);
+static int cmp_overlap (struct bs *bs1, struct bs *bs2, struct output **output_head, struct output **ov_head, struct output **nonov_head);
 
 static void usage()
 {
@@ -32,6 +31,7 @@ Options:\n\
          -v: output version information and exit.\n\
          -h, --help: display this help and exit.\n\
          --header: the header of file1 is preserved.\n\
+         --count: report the number of overlapped peaks of file2 for each peak of file1.\n\
          --col_chr1 <int>: column number for chromosome of file1 (default:0).\n\
          --col_chr2 <int>: column number for chromosome of file2 (default:0).\n\
          --col_start1 <int>: column number for peak start position of file1 (default:1).\n\
@@ -48,6 +48,7 @@ static void version()
 }
 
 static int hf = 0;
+static int cf = 0;
 static char *file1 = NULL;
 static char *file2 = NULL;
 static int col_chr1 = 0, col_chr2 = 0;
@@ -63,6 +64,7 @@ static const Argument args[] = {
   {"--help"      , ARGUMENT_TYPE_FUNCTION, usage  },
   {"-v"          , ARGUMENT_TYPE_FUNCTION, version},
   {"--header"    , ARGUMENT_TYPE_FLAG_ON , &hf  },
+  {"--count"     , ARGUMENT_TYPE_FLAG_ON , &cf  },
   {"-1"          , ARGUMENT_TYPE_STRING  , &file1},
   {"-2"          , ARGUMENT_TYPE_STRING  , &file2},
   {"--col_chr1"  , ARGUMENT_TYPE_INTEGER , &col_chr1   },
@@ -109,8 +111,9 @@ Input file2:                     %s\n\
 File1 column of chr, start, end: %d, %d, %d\n\
 File2 column of chr, start, end: %d, %d, %d\n\
 header flag:                     %d\n\
+counter flag:                    %d\n\
 time:                            %s\n",\
- "ga_overlap", file1, file2, col_chr1, col_st1, col_ed1, col_chr2, col_st2, col_ed2, hf, ctime(&timer) );
+ "ga_overlap", file1, file2, col_chr1, col_st1, col_ed1, col_chr2, col_st2, col_ed2, hf, cf, ctime(&timer) );
 
   ga_parse_chr_bs(file1, &chr_block_head1, col_chr1, col_st1, col_ed1, -1, hf); //parsing each binding sites for each chromosome without strand info
   ga_parse_chr_bs(file2, &chr_block_head2, col_chr2, col_st2, col_ed2, -1, hf);
@@ -118,16 +121,26 @@ time:                            %s\n",\
   for (ch1 = chr_block_head1; ch1; ch1 = ch1->next) {
     for (ch2 = chr_block_head2; ch2; ch2 = ch2->next) {
       if (!strcmp(ch1->chr, ch2->chr)) { //comparing peaks on the same chr
-        cmp_overlap (ch1->bs_list, ch2->bs_list, &output_head, &ov_head, &nonov_head);
+        if(cmp_overlap (ch1->bs_list, ch2->bs_list, &output_head, &ov_head, &nonov_head) != 0){
+          LOG("error: error in cmp_overlap function.");
+          goto err;
+        }
         break;
       }
     }
     if (ch2 == NULL) { //if chr_block2 doesn't have ch1
       for (bs_nonov = ch1->bs_list; bs_nonov; bs_nonov = bs_nonov->next) {
         ga_output_add (&nonov_head, bs_nonov->line); //caution: the order is reversed 
-        if (add_one_val(ga_line_out, bs_nonov->line, "NonOver\n") < 0) {
-          LOG("error: output line was too long.");
-          goto err; //making output link list with flag
+        if (cf) { //if count
+          if (add_one_val(ga_line_out, bs_nonov->line, "NonOver\t0\n") < 0) {
+            LOG("error: output line was too long.");
+            goto err; //making output link list with flag
+          }
+        } else {
+          if (add_one_val(ga_line_out, bs_nonov->line, "NonOver\n") < 0) {
+            LOG("error: output line was too long.");
+            goto err; //making output link list with flag
+          }
         }
         ga_output_add(&output_head, ga_line_out); //caution: the order is reversed
         totnb += 1.0; //total peak number
@@ -147,9 +160,16 @@ time:                            %s\n",\
 
   sprintf(output_name, "%s%s_vs_%s%s", path1, fn1, fn2, ext1);
   if (ga_header_line != NULL) { //if header line
-    if (add_one_val(ga_line_out, ga_header_line, "overlap_flag\n") < 0) {
-      LOG("error: output line was too long.");
-      goto err; //adding one extra column
+    if (cf) {
+      if (add_one_val(ga_line_out, ga_header_line, "overlap_flag\tcount\n") < 0) {
+        LOG("error: output line was too long.");
+        goto err; //adding one extra column
+      }
+    } else {
+      if (add_one_val(ga_line_out, ga_header_line, "overlap_flag\n") < 0) {
+        LOG("error: output line was too long.");
+        goto err; //adding one extra column
+      }
     }
     ga_write_lines (output_name, output_head, ga_line_out); //note that header is line_out, not ga_header_line
   }
@@ -201,51 +221,63 @@ err:
  * **ov_head: pointer of pointer to output link list for output file overlapping bs2
  * **nonov_head: pointer of pointer to output link list for output file not overlapping bs2
  */
-static void cmp_overlap (struct bs *bs1, struct bs *bs2, struct output **output_head, struct output **ov_head, struct output **nonov_head)
+static int cmp_overlap (struct bs *bs1, struct bs *bs2, struct output **output_head, struct output **ov_head, struct output **nonov_head)
 {
-//  char line_out[LINE_STR_LEN];
   struct bs *i, *j;
+  char tmp[64];
+  int c; //counter
 
   for (i = bs1; i; i = i->next) {
+    c = 0; //init counter
     for (j = bs2; j; j = j->next) {
       if (i->ed >= j->st && i->st <= j->ed) { //checking the overlapping
-        ga_output_add(ov_head, i->line); //caution: the order is reversed
-        if (add_one_val(ga_line_out, i->line, "Over\n") < 0) goto err;
-        ga_output_add(output_head, ga_line_out); //caution: the order is reversed
-        ovnb += 1.0; //overlapping peak number
-        break;
+        if (!c) { //ov_head is added only once
+          ga_output_add(ov_head, i->line); //caution: the order is reversed
+          ovnb += 1.0; //overlapping peak number
+        }
+        c++;
+        if(!cf) {
+          if (add_one_val(ga_line_out, i->line, "Over\n") < 0) {
+            LOG("error: output line is too long.");
+            goto err;
+          }
+          ga_output_add(output_head, ga_line_out); //caution: the order is reversed
+          break;
+        }
       }
     }
-    if (j == NULL) { //if i is not overlapped with any bs2
-      ga_output_add(nonov_head, i->line); //caution: the order is reversed
-      if (add_one_val(ga_line_out, i->line, "NonOver\n") < 0) goto err;
+    if (cf && c) { //if at least one peak was overlapped for i
+      sprintf(tmp, "Over\t%d\n", c);
+      if (add_one_val(ga_line_out, i->line, tmp) < 0) {
+        LOG("error: output line is too long.");
+        goto err;
+      }
       ga_output_add(output_head, ga_line_out); //caution: the order is reversed
+    }
+//    if (j == NULL) { //if i is not overlapped with any bs2
+    if (!c) { //if i is not overlapped with any bs2
+      ga_output_add(nonov_head, i->line); //caution: the order is reversed
       novnb += 1.0; //non-overlapping peak number
+      if (cf) {
+        if (add_one_val(ga_line_out, i->line, "NonOver\t0\n") < 0) {
+          LOG("error: output line is too long.");
+          goto err;
+        }
+        ga_output_add(output_head, ga_line_out); //caution: the order is reversed
+      } else {
+        if (add_one_val(ga_line_out, i->line, "NonOver\n") < 0) {
+          LOG("error: output line is too long.");
+          goto err;
+        }
+        ga_output_add(output_head, ga_line_out); //caution: the order is reversed
+      }
     }
     totnb += 1.0; //total peak number
   }
-  return;
+  return 0;
 
 err:
-  return;
+  return -1;
 }
 
-/*
- * This function add one more value to string. If line_out[xxx], line = "aaa\tbbb\n", val = "ccc\n", line_out is "aaa\tbbb\tccc\n".
- * line_out[]: char array. This must have size of LINE_STR_LEN.
- * *line: pointer to char to be added.
- * *val: pointer to char for adding. Put '\n' at the last position if you need.
- */
-/*static int add_one_val (char line_out[], const char *line, const char *val)
-{
-  sprintf(line_out, "%s", line);
-  line_out[strlen(line_out) - 1] = '\t';
-  if (strlen(line_out) + strlen(val) + 1 < LINE_STR_LEN) strncat(line_out, val, strlen(val));
-  else {
-    LOG("error: the output line length is too long.");
-    return -1;
-  }
-
-  return 0;
-} */
 

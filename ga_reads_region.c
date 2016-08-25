@@ -18,8 +18,8 @@
   "%s:line%d:%s(): " m "\n", \
   __FILE__, __LINE__, __FUNCTION__)
 
-static int sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, struct chr_block *chr_block_headsig_d, struct output **output_head, const int hw, const char *region_mode);
-//static int add_one_val (char line_out[], const char *line, const char *val);
+//static int sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, struct chr_block *chr_block_headsig_d, struct output **output_head, const int hw, const char *region_mode);
+static int sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, struct chr_block *chr_block_headsig_d, struct output **output_head);
 
 static void usage()
 {
@@ -174,7 +174,7 @@ time:                            %s\n",\
     }
   }
 
-  if (sig_count (chr_block_headsmt, chr_block_headsig, chr_block_headsig_d, &output_head, hw, region_mode) != 0) {
+  if (sig_count (chr_block_headsmt, chr_block_headsig, chr_block_headsig_d, &output_head) != 0) {
     LOG("error: in sig_count function.");
     goto err;
   }
@@ -214,7 +214,8 @@ err:
   return -1;
 }
 
-static int sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, struct chr_block *chr_block_headsig_d, struct output **output_head, const int hw, const char *region_mode)
+//static int sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, struct chr_block *chr_block_headsig_d, struct output **output_head, const int hw, const char *region_mode)
+static int sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr_block_headsig, struct chr_block *chr_block_headsig_d, struct output **output_head)
 {
   struct chr_block *ch_smt, *ch_sig, *ch_sig_d = NULL;
   struct bs *bs;
@@ -425,23 +426,3 @@ static int sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr
 
   return 0;
 }
-
-/*
- * This function add one more value to string. If line_out[xxx], line = "aaa\tbbb\n", val = "ccc\n", line_out is "aaa\tbbb\tccc\n".
- * line_out[]: char array. This must have size of LINE_STR_LEN.
- * *line: pointer to char to be added.
- * *val: pointer to char for adding. Put '\n' at the last position if you need.
- */
-/*static int add_one_val (char line_out[], const char *line, const char *val)
-{
-  sprintf(line_out, "%s", line);
-  line_out[strlen(line_out) - 1] = '\t';
-  if (strlen(line_out) + strlen(val) + 1 < LINE_STR_LEN) strncat(line_out, val, strlen(val));
-  else {
-    LOG("error: the output line length is too long.");
-    return -1;
-  }
-
-  return 0;
-} */
-
