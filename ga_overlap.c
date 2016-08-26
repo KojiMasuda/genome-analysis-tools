@@ -27,11 +27,13 @@ static void usage()
 Program: ga_overlap\n\
 Summary: report the overlaps of two peaks/summits\n\n\
 Usage:   ga_overlap [options] -1 <file1> -2 <file2>\n\n\
+   or:   ga_overlap [options] -1 <file1> -2 <file2> --hw <half_window: int> --col_start1 <int> --col_end1 <int> ##col_start1 and col_end1 should be same for -hw option\n\n\
 Options:\n\
          -v: output version information and exit.\n\
          -h, --help: display this help and exit.\n\
          --header: the header of file1 is preserved.\n\
          --count: report the number of overlapped peaks of file2 for each peak of file1.\n\
+         --hw <int>: the peak width is extended for this fixed half window from summit of file1.\n\
          --col_chr1 <int>: column number for chromosome of file1 (default:0).\n\
          --col_chr2 <int>: column number for chromosome of file2 (default:0).\n\
          --col_start1 <int>: column number for peak start position of file1 (default:1).\n\
@@ -49,31 +51,33 @@ static void version()
 
 static int hf = 0;
 static int cf = 0;
+static int hw = 0;
 static char *file1 = NULL;
 static char *file2 = NULL;
 static int col_chr1 = 0, col_chr2 = 0;
 static int col_st1 = 1, col_st2 = 1;
 static int col_ed1 = 2, col_ed2 = 2;
-char *ga_header_line = NULL; //header line. Note this is global variable
+char *ga_header_line = NULL; //header line. Note this is external global variable
 static char ga_line_out[LINE_STR_LEN]; //output line with overlapping flag
 static double totnb = 0.0, ovnb = 0.0, novnb = 0.0; //peak numbers
 
 
 static const Argument args[] = {
-  {"-h"          , ARGUMENT_TYPE_FUNCTION, usage  },
-  {"--help"      , ARGUMENT_TYPE_FUNCTION, usage  },
-  {"-v"          , ARGUMENT_TYPE_FUNCTION, version},
-  {"--header"    , ARGUMENT_TYPE_FLAG_ON , &hf  },
-  {"--count"     , ARGUMENT_TYPE_FLAG_ON , &cf  },
-  {"-1"          , ARGUMENT_TYPE_STRING  , &file1},
-  {"-2"          , ARGUMENT_TYPE_STRING  , &file2},
-  {"--col_chr1"  , ARGUMENT_TYPE_INTEGER , &col_chr1   },
-  {"--col_chr2"  , ARGUMENT_TYPE_INTEGER , &col_chr2   },
-  {"--col_start1", ARGUMENT_TYPE_INTEGER , &col_st1   },
-  {"--col_start2", ARGUMENT_TYPE_INTEGER , &col_st2   },
-  {"--col_end1"  , ARGUMENT_TYPE_INTEGER , &col_ed1   },
-  {"--col_end2"  , ARGUMENT_TYPE_INTEGER , &col_ed2   },
-  {NULL          , ARGUMENT_TYPE_NONE    , NULL   },
+  {"-h"          , ARGUMENT_TYPE_FUNCTION, usage    },
+  {"--help"      , ARGUMENT_TYPE_FUNCTION, usage    },
+  {"-v"          , ARGUMENT_TYPE_FUNCTION, version  },
+  {"--header"    , ARGUMENT_TYPE_FLAG_ON , &hf      },
+  {"--count"     , ARGUMENT_TYPE_FLAG_ON , &cf      },
+  {"--hw"        , ARGUMENT_TYPE_INTEGER , &hw      },
+  {"-1"          , ARGUMENT_TYPE_STRING  , &file1   },
+  {"-2"          , ARGUMENT_TYPE_STRING  , &file2   },
+  {"--col_chr1"  , ARGUMENT_TYPE_INTEGER , &col_chr1},
+  {"--col_chr2"  , ARGUMENT_TYPE_INTEGER , &col_chr2},
+  {"--col_start1", ARGUMENT_TYPE_INTEGER , &col_st1 },
+  {"--col_start2", ARGUMENT_TYPE_INTEGER , &col_st2 },
+  {"--col_end1"  , ARGUMENT_TYPE_INTEGER , &col_ed1 },
+  {"--col_end2"  , ARGUMENT_TYPE_INTEGER , &col_ed2 },
+  {NULL          , ARGUMENT_TYPE_NONE    , NULL     },
 };
 
 int main (int argc, char *argv[])
@@ -112,8 +116,9 @@ File1 column of chr, start, end: %d, %d, %d\n\
 File2 column of chr, start, end: %d, %d, %d\n\
 header flag:                     %d\n\
 counter flag:                    %d\n\
+half window:                     %d\n\
 time:                            %s\n",\
- "ga_overlap", file1, file2, col_chr1, col_st1, col_ed1, col_chr2, col_st2, col_ed2, hf, cf, ctime(&timer) );
+ "ga_overlap", file1, file2, col_chr1, col_st1, col_ed1, col_chr2, col_st2, col_ed2, hf, cf, hw, ctime(&timer) );
 
   ga_parse_chr_bs(file1, &chr_block_head1, col_chr1, col_st1, col_ed1, -1, hf); //parsing each binding sites for each chromosome without strand info
   ga_parse_chr_bs(file2, &chr_block_head2, col_chr2, col_st2, col_ed2, -1, hf);
@@ -152,13 +157,16 @@ time:                            %s\n",\
   ga_parse_file_path (file1, path1, fn1, ext1); //parsing input file name into path, file name, and extension
   ga_parse_file_path (file2, path2, fn2, ext2);
 
-  sprintf(output_name, "%s%s_over_%s%s", path1, fn1, fn2, ext1); //concatenating output file name
+  if (hw) sprintf(output_name, "%s%s_hw%d_over_%s%s", path1, fn1, hw, fn2, ext1); //concatenating output file name
+  else sprintf(output_name, "%s%s_over_%s%s", path1, fn1, fn2, ext1); //concatenating output file name
   ga_write_lines (output_name, ov_head, ga_header_line); //writing overlapping peaks
 
-  sprintf(output_name, "%s%s_nonover_%s%s", path1, fn1, fn2, ext1); //concatenating output file name
+  if (hw) sprintf(output_name, "%s%s_hw%d_nonover_%s%s", path1, fn1, hw, fn2, ext1); //concatenating output file name
+  else sprintf(output_name, "%s%s_nonover_%s%s", path1, fn1, fn2, ext1); //concatenating output file name
   ga_write_lines (output_name, nonov_head, ga_header_line); //writing non-overlapping peaks
 
-  sprintf(output_name, "%s%s_vs_%s%s", path1, fn1, fn2, ext1);
+  if (hw) sprintf(output_name, "%s%s_hw%d_vs_%s%s", path1, fn1, hw, fn2, ext1);
+  else sprintf(output_name, "%s%s_vs_%s%s", path1, fn1, fn2, ext1);
   if (ga_header_line != NULL) { //if header line
     if (cf) {
       if (add_one_val(ga_line_out, ga_header_line, "overlap_flag\tcount\n") < 0) {
@@ -175,7 +183,8 @@ time:                            %s\n",\
   }
   else ga_write_lines (output_name, output_head, ga_header_line);
 
-  sprintf(output_name, "%s%s_vs_%s_summary.txt", path1, fn1, fn2); //concatenating output file name
+  if (hw) sprintf(output_name, "%s%s_hw%d_vs_%s_summary.txt", path1, fn1, hw, fn2); //concatenating output file name
+  else sprintf(output_name, "%s%s_vs_%s_summary.txt", path1, fn1, fn2); //concatenating output file name
   if ((fp = fopen(output_name, "w")) == NULL) {
     LOG("error: output file cannot be open.");
     goto err;
@@ -225,12 +234,22 @@ static int cmp_overlap (struct bs *bs1, struct bs *bs2, struct output **output_h
 {
   struct bs *i, *j;
   char tmp[64];
+  int st1, ed1; //start and end position
   int c; //counter
 
   for (i = bs1; i; i = i->next) {
     c = 0; //init counter
+    if (hw) {
+      st1 = i->st - hw; //extending the peak width
+      ed1 = i->st + hw; //extending the peak width
+    } else {
+      st1 = i->st;
+      ed1 = i->ed;
+    }
+
     for (j = bs2; j; j = j->next) {
-      if (i->ed >= j->st && i->st <= j->ed) { //checking the overlapping
+//      if (i->ed >= j->st && i->st <= j->ed) { //checking the overlapping
+      if (ed1 >= j->st && st1 <= j->ed) { //checking the overlapping
         if (!c) { //ov_head is added only once
           ga_output_add(ov_head, i->line); //caution: the order is reversed
           ovnb += 1.0; //overlapping peak number

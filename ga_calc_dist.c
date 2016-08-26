@@ -50,7 +50,7 @@ static char *file2 = NULL;
 static char *mode = NULL;
 static int col_chr1 = 0, col_chr2 = 0;
 static int col_smt1 = 3, col_smt2 = 3;
-char *ga_header_line = NULL; //header line. Note this is global variable
+char *ga_header_line = NULL; //header line. Note this is external global variable
 static char ga_line_out[LINE_STR_LEN]; //output line with overlapping flag
 
 

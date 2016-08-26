@@ -60,7 +60,7 @@ static int col_st = 1;
 static int col_ed = 2;
 static int col_strand = -1;
 static int hw = 1000; //half window size
-char *ga_header_line = NULL; //header line. Note this is global variable
+char *ga_header_line = NULL; //header line. Note this is external global variable
 static char ga_line_out[LINE_STR_LEN]; //output line including relative pos, smt_mean, CI95.00percent_U, CI95.00percent_L, smtNb, Centered, Signal
 
 static const Argument args[] = {
