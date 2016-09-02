@@ -14,6 +14,7 @@
 
 static char *extract_val_line (const char *line, int col, const char sep);
 static struct chr_block *chr_block_add (const char *chr, struct chr_block **chr_block_head);
+static int chr_block_fa_append (struct chr_block_fa **chr_block_head, const char *chr, const char *letter);
 static struct bs *bs_add (const char *chr, struct chr_block **chr_block_head, const unsigned long st, const unsigned long ed, const char strand, const char *line);
 static struct sig *sig_add (const char *chr, struct chr_block **chr_block_head, const unsigned long st, const unsigned long ed, const float val);
 static char *pickup_str (const char *str, const int st);
@@ -36,7 +37,8 @@ void ga_parse_chr_bs (const char *filename, struct chr_block **chr_block_head, i
   FILE *fp;
   if ((fp = fopen (filename, "r")) == NULL) {
     LOG("errer: input file cannot be open.");
-    goto err;
+//    goto err;
+    exit(EXIT_FAILURE);
   }
 
   if (hf) {
@@ -77,7 +79,100 @@ void ga_parse_chr_bs (const char *filename, struct chr_block **chr_block_head, i
   return;
 
 err:
+  fclose(fp);
   return;
+}
+
+/*pointer which must be freed: char *chr */
+/*
+ * This is the main function for parsing fasta file.
+ * *filename: input file name
+ * **chr_block_head: pointer of pointer to struct chr_block_fa.
+ * *gt: genome table, pointer of struct chr_block.
+ */
+int ga_parse_chr_fa (const char *filename, struct chr_block_fa **chr_block_head, struct chr_block *chr_block_head_gt)
+{
+  char line[LINE_STR_LEN], chr_tmp[LINE_STR_LEN], let_tmp[LINE_STR_LEN], *letter = NULL;
+  int i, init=0;
+//  unsigned long letter_len = 0;
+//  char *chr, *st, *ed, *strand, *e;
+  struct chr_block *ch;
+  FILE *fp;
+  if ((fp = fopen (filename, "r")) == NULL) {
+    LOG("errer: input file cannot be open.");
+//    goto err;
+    exit(EXIT_FAILURE);
+  }
+
+  while (fgets(line, LINE_STR_LEN * sizeof(char), fp) != NULL) {
+    if (strlen(line) >= LINE_STR_LEN -1) {
+      LOG("errer: line length is too long.");
+      goto err;
+    }
+    if (line[0] == '#') continue;
+    if (line[0] == '>') { //if chromosome
+      if (line[1] == '\n') {
+        LOG("error: no chromosome.");
+        goto err;
+      }
+      if (!init) init = 1; //if first chromosome
+      else { //if following chromosome
+//        chr_block_fa_append(chr_block_head, chr_tmp, letter, letter_len);
+//        chr_block_fa_append(chr_block_head, chr_tmp, letter);
+//        letter_len = 0;
+        if(chr_block_fa_append(chr_block_head, chr_tmp, letter) != 0) {
+          LOG("error: error in chr_block_fa_append function.");
+          goto err;
+        }
+        free(letter);
+        letter = NULL;
+      }
+
+      i = 0;
+      while(line[i+1] != ' ' && line[i+1] != '\n') {
+        chr_tmp[i] = line[i+1]; //copying chromosome
+        i++;
+      }
+      chr_tmp[i] = '\0'; //null
+
+      for (ch = chr_block_head_gt; ch; ch = ch->next) {
+        if (!(strcmp(ch->chr, chr_tmp))) break;
+      }
+      if (ch == NULL) {
+        printf("error: chromosome '%s' is not found in genome table file.\n", chr_tmp);
+        goto err;
+      }
+      letter = (char*)calloc(ch->bs_list->st + 10000, sizeof(char)); //allocating letter for each chromosome
+    } else { //if letter
+      i = 0;
+      while(line[i] != '\n' && line[i] != '\0') {
+        let_tmp[i] = line[i]; //copying letter
+//        letter_len++;
+        i++;
+      }
+      let_tmp[i] = '\0'; //null
+      if (strlen(let_tmp) + strlen(letter) + 1 > ch->bs_list->st + 10000) { //if the stored letter is more than genome table
+        printf("error: stored letter(%lu char) is longer than genome table data(%lu).\n", (unsigned long)(strlen(let_tmp) + strlen(letter)), ch->bs_list->st);
+        goto err;
+      }
+      strcat(letter, let_tmp); //concatenating letters...
+    }
+  } 
+
+//  chr_block_fa_append(chr_block_head, chr_tmp, letter, letter_len);
+  if(chr_block_fa_append(chr_block_head, chr_tmp, letter) != 0) {
+    LOG("error: error in chr_block_fa_append function.");
+    goto err;
+  }
+
+  free(letter);
+  fclose(fp);
+  return 0;
+
+err:
+  if (letter) free(letter);
+  fclose(fp);
+  return -1;
 }
 
 /*
@@ -140,7 +235,8 @@ void ga_parse_bedgraph (const char *filename, struct chr_block **chr_block_head)
   FILE *fp;
   if ((fp = fopen (filename, "r")) == NULL) {
     LOG("errer: input file cannot be open.");
-    goto err;
+//    goto err;
+    exit(EXIT_FAILURE);
   }
 
   while (fgets(line, LINE_STR_LEN * sizeof(char), fp) != NULL) {
@@ -165,6 +261,7 @@ void ga_parse_bedgraph (const char *filename, struct chr_block **chr_block_head)
   return;
 
 err:
+  fclose(fp);
   return;
 }
 
@@ -245,6 +342,42 @@ static struct chr_block *chr_block_add (const char *chr, struct chr_block **chr_
 err:
   if (p) free(p);
   return (NULL);
+}
+
+/*pointer which must be freed: p(if needed), p->chr, p->letter*/
+/*
+ * This appends new struct chr_block_fa list
+ * **chr_block_head: pointer of pointer to the head of the link(structure chr_block_fa)
+ * *chr: pointer to chromosome name
+ * *letter: pointer to letter
+ */
+static int chr_block_fa_append (struct chr_block_fa **chr_block_head, const char *chr, const char *letter)
+{
+  struct chr_block_fa *p;
+
+  p = malloc(sizeof(struct chr_block_fa));
+  if (p == NULL) {
+    LOG("error: lack of memory.");
+    goto err;
+  }
+  p -> chr = strdup(chr); //assigning chromosome name
+  p -> letter = strdup(letter); //assigning letter for chromosome
+  p -> letter_len = (unsigned long)strlen(letter); //storing letter length
+  
+  if (*chr_block_head == NULL) { //if chromosome is the first one
+    *chr_block_head = p;
+  } else {
+    (*chr_block_head) -> tail -> next = p; //if not parenthesis, *chr_block_head -> tail means "tail pointer" of "pointer of pointer chr_block_head", not "tail pointer" of "pointer of *chr_block_head"
+  }
+
+  (*chr_block_head) -> tail = p;
+  p -> next = NULL;
+
+  return 0;
+
+err:
+  if (p) free(p);
+  return -1;
 }
 
 /*pointer which must be freed: struct bs *p, p->line, */
@@ -377,7 +510,8 @@ void ga_parse_sepwiggz (const char *filename, struct chr_block **chr_block_head)
 
   if ((fp = fopen (tmpfile, "r")) == NULL) {
     LOG("errer: tmp file cannot be open.");
-    goto err;
+//    goto err;
+    exit(EXIT_FAILURE);
   }
 
   while (fgets(fileline, (PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN) * sizeof(char), fp) != NULL) { //reading file name list
@@ -389,7 +523,8 @@ void ga_parse_sepwiggz (const char *filename, struct chr_block **chr_block_head)
     fileline[strlen(fileline) - 1] = '\0'; // the last \n is set as \0
     if ((gfp = gzopen (fileline, "r")) == NULL) {
       LOG("errer: input file cannot be open.");
-      goto err;
+//      goto err;
+      exit(EXIT_FAILURE);
     }
 
     while (gzgets(gfp, line, LINE_STR_LEN * sizeof(char)) != NULL) { //reading each line of each wig.gz
@@ -474,6 +609,8 @@ void ga_parse_sepwiggz (const char *filename, struct chr_block **chr_block_head)
   return;
 
 err:
+  gzclose(gfp);
+  fclose(fp);
   if (step) free(step);
   if (chr) free(chr);
   if (chr_tmp) free(chr_tmp);
@@ -503,7 +640,8 @@ void ga_parse_onewiggz (const char *filename, struct chr_block **chr_block_head)
 
   if ((gfp = gzopen (filename, "r")) == NULL) {
     LOG("errer: input file cannot be open.");
-    goto err;
+//    goto err;
+    exit(EXIT_FAILURE);
   }
 
   while (gzgets(gfp, line, LINE_STR_LEN * sizeof(char)) != NULL) { //reading each line
@@ -580,6 +718,7 @@ void ga_parse_onewiggz (const char *filename, struct chr_block **chr_block_head)
   return;
 
 err:
+  gzclose(gfp);
   if (step) free(step);
   if (chr) free(chr);
   if (chr_tmp) free(chr_tmp);
@@ -668,6 +807,26 @@ void ga_free_chr_block (struct chr_block **chr_block)
     }
 
     free(ch->chr);
+    ch_tmp = ch->next;
+    free(ch);
+    ch = ch_tmp;
+  }
+
+  return;
+}
+
+/*
+ * This frees struct chr_block_fa list
+ * **chr_block: pointer of pointer to the head of the link
+ */
+void ga_free_chr_block_fa (struct chr_block_fa **chr_block)
+{
+  struct chr_block_fa *ch, *ch_tmp;
+
+  ch = *chr_block;
+  while (ch) {
+    free(ch->chr);
+    free(ch->letter);
     ch_tmp = ch->next;
     free(ch);
     ch = ch_tmp;

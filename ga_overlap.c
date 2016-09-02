@@ -26,7 +26,7 @@ static void usage()
   printf("Tool:    genome analysis\n\n\
 Program: ga_overlap\n\
 Summary: report the overlaps of two peaks/summits\n\n\
-Usage:   ga_overlap [options] -1 <file1> -2 <file2>\n\n\
+Usage:   ga_overlap [options] -1 <file1> -2 <file2>\n\
    or:   ga_overlap [options] -1 <file1> -2 <file2> --hw <half_window: int> --col_start1 <int> --col_end1 <int> ##col_start1 and col_end1 should be same for -hw option\n\n\
 Options:\n\
          -v: output version information and exit.\n\
