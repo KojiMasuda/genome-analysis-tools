@@ -36,7 +36,7 @@ Options:\n\
          --col_end <int>: column number for peak end position of summit file (default:2).\n\
          --col_smt <int>: column number for summit position of summit file (default:1).\n\
          --col_strand <int>: column number for strand of summit file (default:-1).\n\
-         --header: <int> the header of summit file is preserved (default:0).\n\
+         --header: the header of summit file is preserved (default:off).\n\
          --sig_d: signal denominator file like input (default:NULL)\n\
          --hw: <int> half range size (default:1000)\n");
   exit(0);

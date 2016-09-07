@@ -30,7 +30,7 @@ Usage:   ga_calc_dist [options] -1 <file1> -2 <file2> -mode two\n\
 Options:\n\
          -v: output version information and exit.\n\
          -h, --help: display this help and exit.\n\
-         --header: the header of file1 is preserved.\n\
+         --header: the header of file1 is preserved (default: off).\n\
          --col_chr1 <int>: column number for chromosome of file1 (default:0).\n\
          --col_chr2 <int>: column number for chromosome of file2 (default:0).\n\
          --col_smt1 <int>: column number for peak summit position of file1 (default:3).\n\

@@ -8,10 +8,11 @@ The included tools are:
 * `ga_reads_summit_all`: calculate read distributions around ALL summits or specific positions such as TSS (Transcription Start Site).
 * `ga_calc_dist`: calculate the distance between two peak sets or inter-summit distance.
 * `ga_reads_region`: calculate read amounts in the specific regions such as peak, up-stream regions.
+* `ga_nuc_region`: calculte nucleotide content in the specified regions.
+* `ga_nuc_summit`: calculte nucleotide content distributions around summits.
 * `ga_deltaG`: calculte the free energy difference between the duplex and single-strand states.
 * `ga_reads_gene`: calculate read distributions around genes (not supported yet...).
 * `ga_flanking`: pick up the regions (genes) which flank peaks/summits (not supported yet...).
-* `ga_nuc_summit`: calculte nucleotide content distributions around summits. User-specified motif distribution can be calculated (not supported yet...).
 
 Requirements
 ========
