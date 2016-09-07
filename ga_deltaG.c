@@ -26,7 +26,8 @@ Summary: report the free energy(delta-G) difference between the duplex and singl
 Usage:   ga_deltaG -fa <fasta file> -gt <genome table file> -lib <library name: SantaLucia_1996 | Breslauer_1986> -win <window size(int)> -step <step size(int)>\n\n\
 Options:\n\
          -v: output version information and exit.\n\
-         -h, --help: display this help and exit.\n");
+         -h, --help: display this help and exit.\n\
+         --gradient: coefficients are used for the energy calculation. The middle of the window is coeffient of 1, and it linearly decreases to 0 for both left and right side (default:0).\n");
   exit(0);
 }
 
@@ -37,10 +38,11 @@ static void version()
 }
 
 char *ga_header_line = NULL; //header line. Note this is external global variable
-static char *fa = NULL;
-static char *gt = NULL;
-static char *lib = NULL;
-static int step = 0, win = 0;
+static char *fa = NULL; //fasta
+static char *gt = NULL; //genome table
+static char *lib = NULL; //library
+static int step = 0, win = 0; //step and window size
+static int gf = 0; //gradient flag
 
 
 static const Argument args[] = {
@@ -51,7 +53,8 @@ static const Argument args[] = {
   {"-gt"         , ARGUMENT_TYPE_STRING  , &gt    },
   {"-lib"        , ARGUMENT_TYPE_STRING  , &lib   },
   {"-step"       , ARGUMENT_TYPE_INTEGER , &step  },
-  {"-win"        , ARGUMENT_TYPE_INTEGER , &win  },
+  {"-win"        , ARGUMENT_TYPE_INTEGER , &win   },
+  {"--gradient"  , ARGUMENT_TYPE_FLAG_ON , &gf    },
   {NULL          , ARGUMENT_TYPE_NONE    , NULL   },
 };
 
@@ -70,9 +73,10 @@ int main (int argc, char *argv[])
   struct chr_block_fa *ch; //for
   struct chr_block *chr_block_head_gt = NULL; //for parsing genome table
 
-  float g_AA, g_AT, g_TA, g_CA, g_GT, g_CT, g_GA, g_CG, g_GC, g_GG, dG;
+  float g_AA, g_AT, g_TA, g_CA, g_GT, g_CT, g_GA, g_CG, g_GC, g_GG, dG; //nearest-neighbor values and delta-G
+  float co, grad; //coefficient and gradient
   unsigned long i;
-  int s;
+  int s, mid;
 
   time_t timer;
   struct gzFile_s *gfp = NULL;
@@ -88,8 +92,9 @@ genome table:                    %s\n\
 library:                         %s\n\
 window size:                     %d\n\
 step size:                       %d\n\
+gradient?:                       %d\n\
 time:                            %s\n",\
- "ga_deltaG", fa, gt, lib, win, step, ctime(&timer) );
+ "ga_deltaG", fa, gt, lib, win, step, gf, ctime(&timer) );
 
   ga_parse_chr_bs (gt, &chr_block_head_gt, 0, 1, 1, -1, 0); //parsing genome tible
   if (ga_parse_chr_fa(fa, &chr_block_head, chr_block_head_gt) != 0){
@@ -130,7 +135,8 @@ time:                            %s\n",\
   for (ch = chr_block_head; ch; ch = ch->next) {
     printf("calculating on %s \n", ch->chr);
 
-    sprintf(output_name, "%sdeltaG.%s.win%d_%s.%d.wig.gz", path, fn, win, ch->chr, step);
+    if (gf) sprintf(output_name, "%sdeltaG.%s.win%d_grad_lib-%s_%s.%d.wig.gz", path, fn, win, lib, ch->chr, step);
+    else sprintf(output_name, "%sdeltaG.%s.win%d_lib-%s_%s.%d.wig.gz", path, fn, win, lib, ch->chr, step);
     if ((gfp = gzopen(output_name, "w")) == NULL) {
       LOG("error: output file cannot be open.");
       exit(EXIT_FAILURE);
@@ -142,6 +148,10 @@ time:                            %s\n",\
       goto err;
     }
 
+    if (gf) {
+      mid = win/2 - 1; //the middle position of the window
+      grad = 2.0 / (float)win; //the coefficient of gradient
+    }
     for (i = 0; i < (ch->letter_len) / step - 1; i++) {
       if (ch->letter_len <= i*step + (win-1) ) break; //if window exceeds chromosome end...
       strncpy(frag, ch->letter + i*step, win);  //sliced fragment DNA from genome. Starting from letter[0], win nucleotide is copied to frag. Next the slice starts from letter[0 + i*step].
@@ -149,21 +159,45 @@ time:                            %s\n",\
       if (strchr(frag, 'N') != NULL) continue; //if N is found
       dG = 0.0; //init delta-G
 
-      for (s = 0; s < strlen(frag) - 1; s++) {
-        strncpy(di, frag + s, 2); //extracting di-Nucleotide, di[2] is always '\0'.
+      if (gf) { //if gradient flag is on
+        co = 2.0 / (float)win; //the first coefficient
 
-        if (!strcmp(di, "AA") || !strcmp(di, "TT")) dG += g_AA; //also for TT
-        else if (!strcmp(di, "AT")) dG += g_AT; //also for 
-        else if (!strcmp(di, "TA")) dG += g_TA; //also for 
-        else if (!strcmp(di, "CA") || !strcmp(di, "TG")) dG += g_CA; //also for 
-        else if (!strcmp(di, "GT") || !strcmp(di, "AC")) dG += g_GT; //also for 
-        else if (!strcmp(di, "CT") || !strcmp(di, "AG")) dG += g_CT; //also for 
-        else if (!strcmp(di, "GA") || !strcmp(di, "TC")) dG += g_GA; //also for 
-        else if (!strcmp(di, "CG")) dG += g_CG; //also for 
-        else if (!strcmp(di, "GC")) dG += g_GC; //also for 
-        else if (!strcmp(di, "GG") || !strcmp(di, "CC")) dG += g_GG; //also for 
-        else printf ("Oops!! Your DNA sequence is not expected!!: %s.\n", di);
+        for (s = 0; s < strlen(frag) - 1; s++) {
+          strncpy(di, frag + s, 2); //extracting di-Nucleotide, di[2] is always '\0'.
+
+          if (!strcmp(di, "AA") || !strcmp(di, "TT")) dG += g_AA * co; //also for TT
+          else if (!strcmp(di, "AT")) dG += g_AT * co; //also for 
+          else if (!strcmp(di, "TA")) dG += g_TA * co; //also for 
+          else if (!strcmp(di, "CA") || !strcmp(di, "TG")) dG += g_CA * co; //also for 
+          else if (!strcmp(di, "GT") || !strcmp(di, "AC")) dG += g_GT * co; //also for 
+          else if (!strcmp(di, "CT") || !strcmp(di, "AG")) dG += g_CT * co; //also for 
+          else if (!strcmp(di, "GA") || !strcmp(di, "TC")) dG += g_GA * co; //also for 
+          else if (!strcmp(di, "CG")) dG += g_CG * co; //also for 
+          else if (!strcmp(di, "GC")) dG += g_GC * co; //also for 
+          else if (!strcmp(di, "GG") || !strcmp(di, "CC")) dG += g_GG * co; //also for 
+          else printf ("Oops!! Your DNA sequence is not expected!!: %s.\n", di);
+
+          if (s >= mid) co = co - grad; //decreasing co
+          else co = co + grad; //increasing co until the mid position
+        }
+      } else {
+        for (s = 0; s < strlen(frag) - 1; s++) {
+          strncpy(di, frag + s, 2); //extracting di-Nucleotide, di[2] is always '\0'.
+
+          if (!strcmp(di, "AA") || !strcmp(di, "TT")) dG += g_AA; //also for TT
+          else if (!strcmp(di, "AT")) dG += g_AT; //also for 
+          else if (!strcmp(di, "TA")) dG += g_TA; //also for 
+          else if (!strcmp(di, "CA") || !strcmp(di, "TG")) dG += g_CA; //also for 
+          else if (!strcmp(di, "GT") || !strcmp(di, "AC")) dG += g_GT; //also for 
+          else if (!strcmp(di, "CT") || !strcmp(di, "AG")) dG += g_CT; //also for 
+          else if (!strcmp(di, "GA") || !strcmp(di, "TC")) dG += g_GA; //also for 
+          else if (!strcmp(di, "CG")) dG += g_CG; //also for 
+          else if (!strcmp(di, "GC")) dG += g_GC; //also for 
+          else if (!strcmp(di, "GG") || !strcmp(di, "CC")) dG += g_GG; //also for 
+          else printf ("Oops!! Your DNA sequence is not expected!!: %s.\n", di);
+        }
       }
+
       sprintf (tmp, "%lu\t%.2f\n", (i*step+(win/2)-(step/2)), dG);
       if (gzputs(gfp, tmp)<0){
         LOG("error: file writing error.");
