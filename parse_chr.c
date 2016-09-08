@@ -83,7 +83,7 @@ err:
   return;
 }
 
-/*pointer which must be freed: char *chr */
+/*pointer which must be freed: char *chr, *letter*/
 /*
  * This is the main function for parsing fasta file.
  * *filename: input file name
@@ -92,15 +92,13 @@ err:
  */
 int ga_parse_chr_fa (const char *filename, struct chr_block_fa **chr_block_head, struct chr_block *chr_block_head_gt)
 {
-  char line[LINE_STR_LEN], chr_tmp[LINE_STR_LEN], let_tmp[LINE_STR_LEN], *letter = NULL;
+  char line[LINE_STR_LEN], chr_tmp[LINE_STR_LEN], *letter = NULL;
   int i, init=0;
-//  unsigned long letter_len = 0;
-//  char *chr, *st, *ed, *strand, *e;
+  unsigned long j = 0; //for letter position
   struct chr_block *ch;
   FILE *fp;
   if ((fp = fopen (filename, "r")) == NULL) {
     LOG("errer: input file cannot be open.");
-//    goto err;
     exit(EXIT_FAILURE);
   }
 
@@ -117,9 +115,6 @@ int ga_parse_chr_fa (const char *filename, struct chr_block_fa **chr_block_head,
       }
       if (!init) init = 1; //if first chromosome
       else { //if following chromosome
-//        chr_block_fa_append(chr_block_head, chr_tmp, letter, letter_len);
-//        chr_block_fa_append(chr_block_head, chr_tmp, letter);
-//        letter_len = 0;
         if(chr_block_fa_append(chr_block_head, chr_tmp, letter) != 0) {
           LOG("error: error in chr_block_fa_append function.");
           goto err;
@@ -143,11 +138,11 @@ int ga_parse_chr_fa (const char *filename, struct chr_block_fa **chr_block_head,
         goto err;
       }
       letter = (char*)calloc(ch->bs_list->st + 10000, sizeof(char)); //allocating letter for each chromosome
+      j = 0; //reset j
     } else { //if letter
-      i = 0;
+/*      i = 0; //this one is slow...
       while(line[i] != '\n' && line[i] != '\0') {
         let_tmp[i] = line[i]; //copying letter
-//        letter_len++;
         i++;
       }
       let_tmp[i] = '\0'; //null
@@ -155,11 +150,26 @@ int ga_parse_chr_fa (const char *filename, struct chr_block_fa **chr_block_head,
         printf("error: stored letter(%lu char) is longer than genome table data(%lu).\n", (unsigned long)(strlen(let_tmp) + strlen(letter)), ch->bs_list->st);
         goto err;
       }
-      strcat(letter, let_tmp); //concatenating letters...
+      strcat(letter, let_tmp); //concatenating letters... */
+
+/*      if (strlen(line) - 1 + strlen(letter) + 1 > ch->bs_list->st + 10000) { //if the stored letter is more than genome table (this one is also slow...)
+        printf("error: stored letter(%lu char) is longer than genome table data(%lu).\n", (unsigned long)(strlen(line) - 1 + strlen(letter)), ch->bs_list->st);
+        goto err;
+      }
+      strncat(letter, line, strlen(line) - 1); //concatenating letters... */
+      i = 0;
+      while(line[i] != '\n' && line[i] != '\0') {
+        if (j + 2 > ch->bs_list->st + 10000) { //if the stored letter is more than genome table
+          printf("error: stored letter(%lu char) is longer than genome table data(%lu).\n", j + 1, ch->bs_list->st);
+          goto err;
+        }
+        letter[j] = line[i]; //copying letter
+        i++;
+        j++;
+      }
     }
   } 
 
-//  chr_block_fa_append(chr_block_head, chr_tmp, letter, letter_len);
   if(chr_block_fa_append(chr_block_head, chr_tmp, letter) != 0) {
     LOG("error: error in chr_block_fa_append function.");
     goto err;

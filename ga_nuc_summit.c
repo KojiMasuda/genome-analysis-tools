@@ -103,7 +103,6 @@ int main (int argc, char *argv[])
   long s; //start position of the window (can be negative if summit is close to position 0 and hw is too large...)
 
   time_t timer;
-//  clock_t c_st, c_ed;
 
   argument_read(&argc, argv, args);//reading arguments
   if (fa == NULL || smt == NULL || gt == NULL) usage();
@@ -132,13 +131,10 @@ time:                            %s\n",\
   }
 
   ga_parse_chr_bs (gt, &chr_block_head_gt, 0, 1, 1, -1, 0); //parsing genome tible
-//  c_st = clock();
   if (ga_parse_chr_fa(fa, &chr_block_head_fa, chr_block_head_gt) != 0){ //parsing fasta
     LOG("error: error in ga_parse_chr_fa function.");
     goto err;
   }
-//  c_ed = clock();
-//  printf("%f sec...\n", (double)(c_ed-c_st)/CLOCKS_PER_SEC);
   ga_parse_file_path (smt, path, fn, ext); //parsing input file name into path, file name, and extension
 
   frag = (char *)malloc(sizeof(char) * (win + 1)); //allocating memory for fragment DNA from genome
