@@ -34,7 +34,7 @@ Options:\n\
          --col_start <int>: column number for peak start position of summit file (default:1).\n\
          --col_end <int>: column number for peak end position of summit file (default:2).\n\
          --col_strand <int>: column number for strand of summit file (default:-1).\n\
-         --header: the header of summit file is preserved (default:off).\n\
+         --header: the first line of summit file is considered as header (default:off).\n\
          --gt: genome table file (default:NULL)\n\
          --sig_d: signal denominator file like input (default:NULL)\n\
          --hw: <int> half range size (default:1000)\n\
