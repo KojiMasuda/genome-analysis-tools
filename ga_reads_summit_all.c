@@ -202,7 +202,7 @@ time:                            %s\n",\
   }
 
   if (filesig_d) {
-    for (c = smtNb - 1; c >= 0 ; c--) {
+    for (c = smtNb - 1; c >= 0 ; c--) { 
       memset(ga_line_out, '\0', sizeof(ga_line_out)); //assigning \0 into ga_line_out
 
       for (i = 0 ;i <= (2 * hw) / step ;i++) { //concatenating val for each window
@@ -225,7 +225,7 @@ time:                            %s\n",\
       }
       ga_output_add (&output_head, ga_line_out); //caution: the order is reversed
     }
-  } else {
+  } else { //if you want the peak ID, you have to locate the peak by accessing chr_block_headsmt, invert c, and use ga_output_append...
     for (c = smtNb - 1; c >= 0 ; c--) {
       memset(ga_line_out, '\0', sizeof(ga_line_out)); //assigning \0 into ga_line_out
 

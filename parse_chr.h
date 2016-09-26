@@ -19,11 +19,14 @@
 struct chr_block {
   char *chr;
   struct chr_block *next;
+  struct chr_block *tail;
   struct bs *bs_list;
   struct sig *sig_list;
+  struct ref *ref_list;
   unsigned long bs_nb;
   int bs_init;
   int sig_init;
+  int ref_init;
 };
 
 /*
@@ -66,10 +69,31 @@ struct sig {
   struct sig *prev;
 };
 
+/*
+ * Structure of ref.
+ * This is a link list.
+ * reference list is linked to one chr block.
+ * *ex_st, *ex_ed, *line must be freed.
+ */
+struct ref {
+  unsigned long st;
+  unsigned long ed;
+  char strand;
+  char *ex_st;
+  char *ex_ed;
+  char *line;
+  char *ov_gene;
+  double ov_prop;
+  struct ref *next;
+  struct ref *tail;
+  struct ref *prev;
+};
+
 extern char *ga_header_line;
 
 void ga_parse_chr_bs (const char *filename, struct chr_block **chr_block_head, int col_chr, int col_st, int col_ed, int col_strand, int hf);
 void ga_parse_chr_bs_rand (struct chr_block **chr_block_head, struct chr_block *chr_block_head_ori, struct chr_block *chr_table, int hw);
+int ga_parse_chr_ref (const char *filename, struct chr_block **chr_block_head, int col_chr, int col_st, int col_ed, int col_strand, int col_ex_st, int col_ex_ed, int hf);
 int ga_parse_chr_fa (const char *filename, struct chr_block_fa **chr_block_head, struct chr_block *chr_block_head_gt);
 void ga_parse_bedgraph (const char *filename, struct chr_block **chr_block_head);
 void ga_parse_sepwiggz (const char *filename, struct chr_block **chr_block_head);

@@ -8,6 +8,7 @@
 
 struct chr_block *ga_mergesort_chr(struct chr_block *p);
 struct bs *ga_mergesort_bs(struct bs *p);
+struct ref *ga_mergesort_ref(struct ref *p);
 struct sig *ga_mergesort_sig(struct sig *p);
 
 #endif

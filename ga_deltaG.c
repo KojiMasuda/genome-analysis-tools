@@ -1,6 +1,6 @@
 /*
  * This program is one of the genome analysis tools.
- * This program calculates the free energy difference between the duplex and single-strand states.
+ * This program makes the wiggle file of the free energy difference between the duplex and single-strand states.
  * See usage for detail.
  */
 
@@ -22,7 +22,7 @@ static void usage()
 {
   printf("Tool:    genome analysis\n\n\
 Program: ga_deltaG\n\
-Summary: report the free energy(delta-G) difference between the duplex and single-strand states.\n\n\
+Summary: makes the wiggle file of the free energy(delta-G) difference between the duplex and single-strand states.\n\n\
 Usage:   ga_deltaG -fa <fasta file> -gt <genome table file> -lib <library name: SantaLucia_1996 | Breslauer_1986> -win <window size(int)> -step <step size(int)>\n\n\
 Options:\n\
          -v: output version information and exit.\n\

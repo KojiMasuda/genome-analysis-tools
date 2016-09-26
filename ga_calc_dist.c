@@ -55,18 +55,18 @@ static char ga_line_out[LINE_STR_LEN]; //output line with overlapping flag
 
 
 static const Argument args[] = {
-  {"-h"          , ARGUMENT_TYPE_FUNCTION, usage  },
-  {"--help"      , ARGUMENT_TYPE_FUNCTION, usage  },
-  {"-v"          , ARGUMENT_TYPE_FUNCTION, version},
-  {"--header"    , ARGUMENT_TYPE_FLAG_ON , &hf  },
-  {"-1"          , ARGUMENT_TYPE_STRING  , &file1},
-  {"-2"          , ARGUMENT_TYPE_STRING  , &file2},
-  {"-mode"          , ARGUMENT_TYPE_STRING  , &mode},
-  {"--col_chr1"  , ARGUMENT_TYPE_INTEGER , &col_chr1   },
-  {"--col_chr2"  , ARGUMENT_TYPE_INTEGER , &col_chr2   },
-  {"--col_smt1", ARGUMENT_TYPE_INTEGER , &col_smt1   },
-  {"--col_smt2", ARGUMENT_TYPE_INTEGER , &col_smt2   },
-  {NULL          , ARGUMENT_TYPE_NONE    , NULL   },
+  {"-h"          , ARGUMENT_TYPE_FUNCTION, usage    },
+  {"--help"      , ARGUMENT_TYPE_FUNCTION, usage    },
+  {"-v"          , ARGUMENT_TYPE_FUNCTION, version  },
+  {"--header"    , ARGUMENT_TYPE_FLAG_ON , &hf      },
+  {"-1"          , ARGUMENT_TYPE_STRING  , &file1   },
+  {"-2"          , ARGUMENT_TYPE_STRING  , &file2   },
+  {"-mode"          , ARGUMENT_TYPE_STRING  , &mode },
+  {"--col_chr1"  , ARGUMENT_TYPE_INTEGER , &col_chr1},
+  {"--col_chr2"  , ARGUMENT_TYPE_INTEGER , &col_chr2},
+  {"--col_smt1", ARGUMENT_TYPE_INTEGER , &col_smt1  },
+  {"--col_smt2", ARGUMENT_TYPE_INTEGER , &col_smt2  },
+  {NULL          , ARGUMENT_TYPE_NONE    , NULL     },
 };
 
 int main (int argc, char *argv[])
@@ -98,8 +98,8 @@ Tools:                           genome analysis tools\n\n\
 Input file1:                     %s\n\
 Input file2:                     %s\n\
 mode:                            %s\n\
-File1 column of chr, summit: %d, %d\n\
-File2 column of chr, summit: %d, %d\n\
+File1 column of chr, summit:     %d, %d\n\
+File2 column of chr, summit:     %d, %d\n\
 header flag:                     %d\n\
 time:                            %s\n",\
  "ga_calc_dist", file1, file2, mode, col_chr1, col_smt1, col_chr2, col_smt2, hf, ctime(&timer) );

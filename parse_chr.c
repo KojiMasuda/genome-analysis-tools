@@ -14,9 +14,11 @@
 
 static char *extract_val_line (const char *line, int col, const char sep);
 static struct chr_block *chr_block_add (const char *chr, struct chr_block **chr_block_head);
+static int chr_block_append (const char *chr, struct chr_block **chr_block_head);
 static int chr_block_fa_append (struct chr_block_fa **chr_block_head, const char *chr, const char *letter);
 static struct bs *bs_add (const char *chr, struct chr_block **chr_block_head, const unsigned long st, const unsigned long ed, const char strand, const char *line);
 static struct sig *sig_add (const char *chr, struct chr_block **chr_block_head, const unsigned long st, const unsigned long ed, const float val);
+static int ref_append (const char *chr, struct chr_block **chr_block_head, const unsigned long st, const unsigned long ed, const char strand, const char *ex_st, const char *ex_ed, const char *line);
 static char *pickup_str (const char *str, const int st);
 
 /*pointer which must be freed: char *ga_header_line */
@@ -63,7 +65,7 @@ void ga_parse_chr_bs (const char *filename, struct chr_block **chr_block_head, i
     st  = extract_val_line(line, col_st , '\t');
     ed  = extract_val_line(line, col_ed , '\t');
     chr_block_add (chr, chr_block_head); //adding chr link list (if the chr is already linked, the input chr is just ignored)
-    if (col_strand > 0) {
+    if (col_strand >= 0) {
       strand = extract_val_line(line, col_strand , '\t');
       bs_add (chr, chr_block_head, strtoul(st, &e, 10), strtoul(ed, &e, 10), strand[0], line); //adding bs with strand info
       free(strand);
@@ -81,6 +83,91 @@ void ga_parse_chr_bs (const char *filename, struct chr_block **chr_block_head, i
 err:
   fclose(fp);
   return;
+}
+
+/*pointer which must be freed: char *ga_header_line */
+/*
+ * This is the main function for parsing.
+ * *filename: input file name
+ * **chr_block_head: pointer of pointer to struct chr_block.
+ * col_chr: column num of chr
+ * col_st: column num of start
+ * col_ed: column num of end
+ * col_strand: column num of strand
+ * col_ex_st: column num of exon start
+ * col_ex_ed: column num of exon end
+ * hf: header flag. If 1, header is obtained from the first line of input file and pointed by global variable, ga_header_line.
+ */
+int ga_parse_chr_ref (const char *filename, struct chr_block **chr_block_head, int col_chr, int col_st, int col_ed, int col_strand, int col_ex_st, int col_ex_ed, int hf)
+{
+  char line[LINE_STR_LEN];
+  char *chr, *st, *ed, *strand, *ex_st, *ex_ed, *e;
+  FILE *fp;
+  if ((fp = fopen (filename, "r")) == NULL) {
+    LOG("errer: input file cannot be open.");
+    exit(EXIT_FAILURE);
+  }
+
+  if (hf) {
+    if (fgets(line, LINE_STR_LEN * sizeof(char), fp) != NULL) {
+      if (strlen(line) >= LINE_STR_LEN -1) {
+        LOG("errer: line length is too long.");
+        goto err;
+      }
+      else if (ga_header_line == NULL){ //so, header is obtained from a file which is opened FIRST during the whole program, basically
+        ga_header_line = strdup(line);
+      }
+    }
+  }
+
+  while (fgets(line, LINE_STR_LEN * sizeof(char), fp) != NULL) {
+    if (strlen(line) >= LINE_STR_LEN -1) {
+      LOG("errer: line length is too long.");
+      goto err;
+    }
+    if (line[0] == '#') continue;
+    chr = extract_val_line(line, col_chr, '\t'); //extracting chr, start, end, ex_st, ex_ed positions
+    st  = extract_val_line(line, col_st , '\t');
+    ed  = extract_val_line(line, col_ed , '\t');
+    ex_st  = extract_val_line(line, col_ex_st , '\t');
+    ex_ed  = extract_val_line(line, col_ex_ed , '\t');
+    if(chr_block_append (chr, chr_block_head) != 0){ //appending chr link list (if the chr is already linked, the input chr is just ignored)
+      LOG("error: error in chr_block_append function.");
+      goto err;
+    }
+
+    if (col_strand >= 0) {
+      strand = extract_val_line(line, col_strand , '\t');
+      if (ref_append (chr, chr_block_head, strtoul(st, &e, 10), strtoul(ed, &e, 10), strand[0], ex_st, ex_ed, line) != 0){ //appending ref
+        LOG("error: error in ref_append function.");
+        goto err;
+      }
+      free(strand);
+    } else {
+      if (ref_append (chr, chr_block_head, strtoul(st, &e, 10), strtoul(ed, &e, 10), '.', ex_st, ex_ed, line) != 0){ //appending ref
+        LOG("error: error in ref_append function.");
+        goto err;
+      }
+    }
+    free(chr);
+    free(st);
+    free(ed);
+    free(ex_st);
+    free(ex_ed);
+  }
+
+  fclose(fp);
+  return 0;
+
+err:
+  fclose(fp);
+  if (chr) free(chr);
+  if (st) free(st);
+  if (ed) free(ed);
+  if (ex_st) free(ex_st);
+  if (ex_ed) free(ex_ed);
+  if (strand) free(strand);
+  return -1;
 }
 
 /*pointer which must be freed: char *chr, *letter*/
@@ -343,6 +430,7 @@ static struct chr_block *chr_block_add (const char *chr, struct chr_block **chr_
   /*initialization of bs and sig block*/
   p -> bs_init = 0;
   p -> sig_init = 0;
+  p -> ref_init = 0;
 
   p -> next = *chr_block_head; //adding new chr block
   *chr_block_head = p;
@@ -352,6 +440,49 @@ static struct chr_block *chr_block_add (const char *chr, struct chr_block **chr_
 err:
   if (p) free(p);
   return (NULL);
+}
+
+/*pointer which must be freed: struct chr_block *p, p->chr*/
+/*
+ * This appends new struct chr_block list
+ * *chr: pointer to chromosome name
+ * **chr_block_head: pointer of pointer to the head of the link
+ */
+static int chr_block_append (const char *chr, struct chr_block **chr_block_head)
+{
+  struct chr_block *p;
+  struct chr_block *ch;
+
+  for (ch = *chr_block_head; ch; ch = ch->next) {//checking chr is already in chr_block list
+    if (!strcmp(chr, ch->chr)) return 0;
+  }
+
+  p = malloc(sizeof(struct chr_block));
+  if (p == NULL) {
+    LOG("error: lack of memory.");
+    goto err;
+  }
+  p -> chr = strdup(chr); //assigning chromosome name
+
+  /*initialization of bs and sig block*/
+  p -> bs_init = 0;
+  p -> sig_init = 0;
+  p -> ref_init = 0;
+
+  if (*chr_block_head == NULL) { //if chromosome is the first one
+    *chr_block_head = p;
+  } else {
+    (*chr_block_head) -> tail -> next = p; //if not parenthesis, *chr_block_head -> tail means "tail pointer" of "pointer of pointer chr_block_head", not "tail pointer" of "pointer of *chr_block_head"
+  }
+
+  (*chr_block_head) -> tail = p;
+  p -> next = NULL;
+
+  return 0;
+
+err:
+  if (p) free(p);
+  return -1;
 }
 
 /*pointer which must be freed: p(if needed), p->chr, p->letter*/
@@ -443,6 +574,65 @@ static struct bs *bs_add (const char *chr, struct chr_block **chr_block_head, co
 err:
   if (p) free (p);
   return (NULL);
+}
+
+/*pointer which must be freed: struct bs *p, p->line, p->ex_st, p->ex_ed*/
+/*
+ * This appends new struct ref list
+ * *chr: pointer to chr name
+ * **chr_block_head: pointer of pointer to the head of the link
+ * st: start position
+ * ed: end position
+ * strand: strand either '+', '-' or '.'.
+ * *ex_st: pointer to exon start positions
+ * *ex_ed: pointer to exon end positions
+ * *line: pointer to each line which is read
+ */
+static int ref_append (const char *chr, struct chr_block **chr_block_head, const unsigned long st, const unsigned long ed, const char strand, const char *ex_st, const char *ex_ed, const char *line)
+{
+  struct ref *p;
+  struct chr_block *ch;
+
+  p = malloc(sizeof(struct ref));
+  if (p == NULL) {
+    LOG("error: lack of memory.");
+    goto err;
+  }
+  p -> st = st; //assigning start position
+  p -> ed = ed; //assigning end position
+  p -> strand = strand; //assigning strand info
+  p -> ex_st = strdup(ex_st); //assigning exon start
+  p -> ex_ed = strdup(ex_ed); //assigning exon end
+  p -> line = strdup(line); //assigning line
+  p -> ov_gene = NULL; //at this point, ov_gene is null.
+
+  for (ch = *chr_block_head; ch; ch = ch->next) { //checking chr is already in chr_block list
+    if (!strcmp(chr, ch->chr)) break;
+  }
+
+  if (ch == NULL) {
+    fprintf(stderr, "error: chr %s is not in the chr block list", chr);
+    goto err;
+  }
+
+  /*initialization of bs*/
+  if (!(ch -> ref_init)) { //if the ref is the first one to be added.
+    ch -> ref_list = p;
+    p -> prev = NULL;
+    ch -> ref_init = 1; //initialization
+  } else { //if the bs is not the first one to be added.
+    ch -> ref_list -> tail -> next = p;
+    p -> prev = ch -> ref_list -> tail;
+  }
+
+  p -> next = NULL;
+  ch -> ref_list -> tail = p;
+
+  return 0;
+
+err:
+  if (p) free (p);
+  return -1;
 }
 
 /*pointer which must be freed: struct sig *p */
@@ -793,11 +983,13 @@ void ga_free_chr_block (struct chr_block **chr_block)
   struct chr_block *ch, *ch_tmp;
   struct bs *bs, *bs_tmp;
   struct sig *sig, *sig_tmp;
+  struct ref *ref, *ref_tmp;
 
   ch = *chr_block;
   while (ch) {
     bs = ch -> bs_list;
     sig = ch -> sig_list;
+    ref = ch -> ref_list;
 
     if (ch->bs_init) {
       while (bs) {
@@ -805,6 +997,18 @@ void ga_free_chr_block (struct chr_block **chr_block)
         bs_tmp = bs->next;
         free(bs);
         bs = bs_tmp;
+      }
+    }
+
+    if (ch->ref_init) {
+      while (ref) {
+        free(ref->ex_st);
+        free(ref->ex_ed);
+        if (NULL != ref->ov_gene) free(ref->ov_gene);
+        free(ref->line);
+        ref_tmp = ref->next;
+        free(ref);
+        ref = ref_tmp;
       }
     }
 
