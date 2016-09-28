@@ -61,11 +61,11 @@ static const Argument args[] = {
 int main (int argc, char *argv[])
 {
   /*path, filename, and extension*/
-  char path[PATH_STR_LEN];
-  char fn[FILE_STR_LEN];
-  char ext[EXT_STR_LEN];
-  char output_name[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN]; //output file name
-  char tmp[LINE_STR_LEN];
+  char path[PATH_STR_LEN] = {0};
+  char fn[FILE_STR_LEN] = {0};
+  char ext[EXT_STR_LEN] = {0};
+  char output_name[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN] = {0}; //output file name
+  char tmp[LINE_STR_LEN] = {0};
   char *frag; //fragment
   char di[3] = {0}; //di-Nucleotide
 

@@ -51,7 +51,7 @@ static char *mode = NULL;
 static int col_chr1 = 0, col_chr2 = 0;
 static int col_smt1 = 3, col_smt2 = 3;
 char *ga_header_line = NULL; //header line. Note this is external global variable
-static char ga_line_out[LINE_STR_LEN]; //output line with overlapping flag
+static char ga_line_out[LINE_STR_LEN] = {0}; //output line with overlapping flag
 
 
 static const Argument args[] = {
@@ -80,13 +80,13 @@ int main (int argc, char *argv[])
   struct bs *bs_nonov, *bs1; //for bs of file1 of which chr is not in file2 and for loop
 
   /*path, filename, and extension*/
-  char path1[PATH_STR_LEN];
-  char fn1[FILE_STR_LEN];
-  char ext1[EXT_STR_LEN];
-  char path2[PATH_STR_LEN];
-  char fn2[FILE_STR_LEN];
-  char ext2[EXT_STR_LEN];
-  char output_name[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN]; //output file name
+  char path1[PATH_STR_LEN] = {0};
+  char fn1[FILE_STR_LEN] = {0};
+  char ext1[EXT_STR_LEN] = {0};
+  char path2[PATH_STR_LEN] = {0};
+  char fn2[FILE_STR_LEN] = {0};
+  char ext2[EXT_STR_LEN] = {0};
+  char output_name[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN] = {0}; //output file name
   time_t timer;
 
   argument_read(&argc, argv, args);//reading arguments
@@ -207,7 +207,7 @@ err:
 static void cmp_two_peaks (struct bs *bs1, struct bs *bs2, struct output **output_head)
 {
   struct bs *i, *j, *j_tmp;
-  char tmp[64];
+  char tmp[64] = {0};
 
   for (i = bs1; i; i = i->next) {
     if (i->st <= bs2->st) { //if bs1 is the left side among all bs2

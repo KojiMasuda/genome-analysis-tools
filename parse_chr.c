@@ -34,7 +34,7 @@ static char *pickup_str (const char *str, const int st);
  */
 void ga_parse_chr_bs (const char *filename, struct chr_block **chr_block_head, int col_chr, int col_st, int col_ed, int col_strand, int hf)
 {
-  char line[LINE_STR_LEN];
+  char line[LINE_STR_LEN] = {0};
   char *chr, *st, *ed, *strand, *e;
   FILE *fp;
   if ((fp = fopen (filename, "r")) == NULL) {
@@ -100,7 +100,7 @@ err:
  */
 int ga_parse_chr_ref (const char *filename, struct chr_block **chr_block_head, int col_chr, int col_st, int col_ed, int col_strand, int col_ex_st, int col_ex_ed, int hf)
 {
-  char line[LINE_STR_LEN];
+  char line[LINE_STR_LEN] = {0};
   char *chr, *st, *ed, *strand, *ex_st, *ex_ed, *e;
   FILE *fp;
   if ((fp = fopen (filename, "r")) == NULL) {
@@ -179,7 +179,7 @@ err:
  */
 int ga_parse_chr_fa (const char *filename, struct chr_block_fa **chr_block_head, struct chr_block *chr_block_head_gt)
 {
-  char line[LINE_STR_LEN], chr_tmp[LINE_STR_LEN], *letter = NULL;
+  char line[LINE_STR_LEN] = {0}, chr_tmp[LINE_STR_LEN] = {0}, *letter = NULL;
   int i, init=0;
   unsigned long j = 0; //for letter position
   struct chr_block *ch;
@@ -320,14 +320,10 @@ err:
  * This is the main function for parsing.
  * *filename: input file name
  * **chr_block_head: pointer of pointer to struct chr_block.
- * col_chr: column num of chr
- * col_st: column num of start
- * col_ed: column num of end
- * hf: header flag. If 1, header is obtained from the first line of input file and pointed by global variable, ga_header_line.
  */
 void ga_parse_bedgraph (const char *filename, struct chr_block **chr_block_head)
 {
-  char line[LINE_STR_LEN];
+  char line[LINE_STR_LEN] = {0};
   char *chr, *st, *ed, *val, *e;
   FILE *fp;
   if ((fp = fopen (filename, "r")) == NULL) {
@@ -693,7 +689,7 @@ err:
  */
 void ga_parse_sepwiggz (const char *filename, struct chr_block **chr_block_head)
 {
-  char line[LINE_STR_LEN], tmpfile[128], str[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN], fileline[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN], str_last[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN];
+  char line[LINE_STR_LEN] = {0}, tmpfile[128] = {0}, str[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN] = {0}, fileline[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN] = {0}, str_last[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN] = {0};
 
   char *step=NULL, *chr=NULL, *chr_tmp=NULL, *span=NULL, *span_tmp=NULL, *val_tmp=NULL, *st_tmp=NULL, *start=NULL, *step_tmp=NULL, *step_p=NULL, *e;
   int span_val=1, step_val=0;
@@ -831,7 +827,7 @@ err:
  */
 void ga_parse_onewiggz (const char *filename, struct chr_block **chr_block_head)
 {
-  char line[LINE_STR_LEN], stephold[20];
+  char line[LINE_STR_LEN] = {0}, stephold[20] = {0};
 
   char *step=NULL, *chr=NULL, *chr_tmp=NULL, *span=NULL, *span_tmp=NULL, *val_tmp=NULL, *st_tmp=NULL, *start=NULL, *step_tmp=NULL, *step_p=NULL, *e;
   int span_val=1, st=0, step_val=0, fl=0;

@@ -16,7 +16,7 @@ typedef enum {
 
 #define VER_MAJOR 0
 #define VER_MOD 8
-#define VER_MINOR 0
+#define VER_MINOR 1
 
 typedef struct _Argument {
 	const char *name;

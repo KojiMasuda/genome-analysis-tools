@@ -33,6 +33,7 @@ Options:\n\
          -h, --help: display this help and exit.\n\
          --header: the header of file1 is preserved (default: off).\n\
          --count: report the number of overlapped peaks of file2 for each peak of file1 (default: off).\n\
+         --preserve2: preserve file2 content if overlapped (default: off).\n\
          --hw <int>: the peak width is extended for this fixed half window from summit of file1.\n\
          --col_chr1 <int>: column number for chromosome of file1 (default:0).\n\
          --col_chr2 <int>: column number for chromosome of file2 (default:0).\n\
@@ -51,6 +52,7 @@ static void version()
 
 static int hf = 0;
 static int cf = 0;
+static int p2 = 0;
 static int hw = 0;
 static char *file1 = NULL;
 static char *file2 = NULL;
@@ -58,7 +60,8 @@ static int col_chr1 = 0, col_chr2 = 0;
 static int col_st1 = 1, col_st2 = 1;
 static int col_ed1 = 2, col_ed2 = 2;
 char *ga_header_line = NULL; //header line. Note this is external global variable
-static char ga_line_out[LINE_STR_LEN]; //output line with overlapping flag
+static char ga_line_out[LINE_STR_LEN] = {0}; //output line with overlapping flag
+static char line2[LINE_STR_LEN] = {0}; //line for file2
 static double totnb = 0.0, ovnb = 0.0, novnb = 0.0; //peak numbers
 
 
@@ -68,6 +71,7 @@ static const Argument args[] = {
   {"-v"          , ARGUMENT_TYPE_FUNCTION, version  },
   {"--header"    , ARGUMENT_TYPE_FLAG_ON , &hf      },
   {"--count"     , ARGUMENT_TYPE_FLAG_ON , &cf      },
+  {"--preserve2" , ARGUMENT_TYPE_FLAG_ON , &p2      },
   {"--hw"        , ARGUMENT_TYPE_INTEGER , &hw      },
   {"-1"          , ARGUMENT_TYPE_STRING  , &file1   },
   {"-2"          , ARGUMENT_TYPE_STRING  , &file2   },
@@ -93,13 +97,15 @@ int main (int argc, char *argv[])
   struct bs *bs_nonov; //for bs of file1 of which chr is not in file2
 
   /*path, filename, and extension*/
-  char path1[PATH_STR_LEN];
-  char fn1[FILE_STR_LEN];
-  char ext1[EXT_STR_LEN];
-  char path2[PATH_STR_LEN];
-  char fn2[FILE_STR_LEN];
-  char ext2[EXT_STR_LEN];
-  char output_name[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN]; //output file name
+  char path1[PATH_STR_LEN] = {0};
+  char fn1[FILE_STR_LEN] = {0};
+  char ext1[EXT_STR_LEN] = {0};
+  char path2[PATH_STR_LEN] = {0};
+  char fn2[FILE_STR_LEN] = {0};
+  char ext2[EXT_STR_LEN] = {0};
+  char output_name[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN] = {0}; //output file name
+  char *ga_header_line2 = NULL; //header line2 if p2
+  int i=0;
   time_t timer;
 
   FILE *fp;
@@ -116,12 +122,29 @@ File1 column of chr, start, end: %d, %d, %d\n\
 File2 column of chr, start, end: %d, %d, %d\n\
 header flag:                     %d\n\
 counter flag:                    %d\n\
+preserve file2?:                 %d\n\
 half window:                     %d\n\
 time:                            %s\n",\
- "ga_overlap", file1, file2, col_chr1, col_st1, col_ed1, col_chr2, col_st2, col_ed2, hf, cf, hw, ctime(&timer) );
+ "ga_overlap", file1, file2, col_chr1, col_st1, col_ed1, col_chr2, col_st2, col_ed2, hf, cf, p2, hw, ctime(&timer) );
 
-  ga_parse_chr_bs(file1, &chr_block_head1, col_chr1, col_st1, col_ed1, -1, hf); //parsing each binding sites for each chromosome without strand info
   ga_parse_chr_bs(file2, &chr_block_head2, col_chr2, col_st2, col_ed2, -1, hf);
+  if (p2 && NULL != ga_header_line) ga_header_line2 = strdup(ga_header_line); //preserving header2 
+  if (NULL != ga_header_line) free(ga_header_line);
+  ga_header_line = NULL;
+  ga_parse_chr_bs(file1, &chr_block_head1, col_chr1, col_st1, col_ed1, -1, hf); //parsing each binding sites for each chromosome without strand info
+
+  //making "tab" line for non-overlapping...
+  if (p2) {
+    bs_nonov = chr_block_head2 -> bs_list; //the very first line
+    while(bs_nonov -> line [i] != '\0'){
+      if (bs_nonov -> line [i] == '\t'){
+        if (strlen(line2) + strlen("NA\t") + 1 < LINE_STR_LEN) strncat(line2, "NA\t", strlen("NA\t"));
+      }
+      i++;
+    }
+    if (strlen(line2) + strlen("NA\t") + 1 < LINE_STR_LEN) strncat(line2, "NA\t", strlen("NA\t"));
+  }
+  //
 
   for (ch1 = chr_block_head1; ch1; ch1 = ch1->next) {
     for (ch2 = chr_block_head2; ch2; ch2 = ch2->next) {
@@ -136,17 +159,21 @@ time:                            %s\n",\
     if (ch2 == NULL) { //if chr_block2 doesn't have ch1
       for (bs_nonov = ch1->bs_list; bs_nonov; bs_nonov = bs_nonov->next) {
         ga_output_add (&nonov_head, bs_nonov->line); //caution: the order is reversed 
-        if (cf) { //if count
-          if (add_one_val(ga_line_out, bs_nonov->line, "NonOver\t0\n") < 0) {
-            LOG("error: output line was too long.");
-            goto err; //making output link list with flag
-          }
-        } else {
-          if (add_one_val(ga_line_out, bs_nonov->line, "NonOver\n") < 0) {
-            LOG("error: output line was too long.");
-            goto err; //making output link list with flag
-          }
+
+        sprintf(ga_line_out, "%s", bs_nonov->line);
+        ga_line_out[strlen(ga_line_out) - 1] = '\t'; //\n was replaced by \t
+
+        if (p2) {
+          if (strlen(ga_line_out) + strlen(line2) + 1 < LINE_STR_LEN) strncat(ga_line_out, line2, strlen(line2));
         }
+
+        if (strlen(ga_line_out) + strlen("NonOver\t") + 1 < LINE_STR_LEN) strncat(ga_line_out, "NonOver\t", strlen("NonOver\t"));
+
+        if (cf) {
+          if (strlen(ga_line_out) + strlen("0\t") + 1 < LINE_STR_LEN) strncat(ga_line_out, "0\t", strlen("0\t"));
+        }
+
+        ga_line_out[strlen(ga_line_out) - 1] = '\n'; //\t was replaced by \n
         ga_output_add(&output_head, ga_line_out); //caution: the order is reversed
         totnb += 1.0; //total peak number
         novnb += 1.0; //non-overlapping peak number
@@ -168,20 +195,28 @@ time:                            %s\n",\
   if (hw) sprintf(output_name, "%s%s_hw%d_vs_%s%s", path1, fn1, hw, fn2, ext1);
   else sprintf(output_name, "%s%s_vs_%s%s", path1, fn1, fn2, ext1);
   if (ga_header_line != NULL) { //if header line
-    if (cf) {
-      if (add_one_val(ga_line_out, ga_header_line, "overlap_flag\tcount\n") < 0) {
-        LOG("error: output line was too long.");
-        goto err; //adding one extra column
+    sprintf(ga_line_out, "%s", ga_header_line);
+    ga_line_out[strlen(ga_line_out) - 1] = '\t'; //\n was replaced by \t
+
+    if (p2) {
+      if (NULL == ga_header_line2) {
+        LOG("error: only file1 had a header.");
+        goto err;
       }
-    } else {
-      if (add_one_val(ga_line_out, ga_header_line, "overlap_flag\n") < 0) {
-        LOG("error: output line was too long.");
-        goto err; //adding one extra column
-      }
+      if (strlen(ga_line_out) + strlen(ga_header_line2) + 1 < LINE_STR_LEN) strncat(ga_line_out, ga_header_line2, strlen(ga_header_line2));
+      ga_line_out[strlen(ga_line_out) - 1] = '\t'; //\n was replaced by \t
     }
-    ga_write_lines (output_name, output_head, ga_line_out); //note that header is line_out, not ga_header_line
+
+    if (strlen(ga_line_out) + strlen("overlap_flag\t") + 1 < LINE_STR_LEN) strncat(ga_line_out, "overlap_flag\t", strlen("overlap_flag\t"));
+
+    if (cf) {
+      if (strlen(ga_line_out) + strlen("count\t") + 1 < LINE_STR_LEN) strncat(ga_line_out, "count\t", strlen("count\t"));
+    }
+    ga_line_out[strlen(ga_line_out) - 1] = '\n'; //\t was replaced by \n
+    ga_write_lines (output_name, output_head, ga_line_out);
   }
   else ga_write_lines (output_name, output_head, ga_header_line);
+
 
   if (hw) sprintf(output_name, "%s%s_hw%d_vs_%s_summary.txt", path1, fn1, hw, fn2); //concatenating output file name
   else sprintf(output_name, "%s%s_vs_%s_summary.txt", path1, fn1, fn2); //concatenating output file name
@@ -202,6 +237,7 @@ time:                            %s\n",\
   fclose(fp);
 
   if (ga_header_line) free(ga_header_line);
+  if (ga_header_line2) free(ga_header_line2);
   ga_free_chr_block(&chr_block_head1);
   ga_free_chr_block(&chr_block_head2);
 
@@ -213,6 +249,7 @@ time:                            %s\n",\
 
 err:
   if (ga_header_line) free(ga_header_line);
+  if (ga_header_line2) free(ga_header_line2);
   if (chr_block_head1) ga_free_chr_block(&chr_block_head1);
   if (chr_block_head2) ga_free_chr_block(&chr_block_head2);
 
@@ -232,8 +269,8 @@ err:
  */
 static int cmp_overlap (struct bs *bs1, struct bs *bs2, struct output **output_head, struct output **ov_head, struct output **nonov_head)
 {
-  struct bs *i, *j;
-  char tmp[64];
+  struct bs *i, *j, *j_tmp;
+  char tmp[80] = {0};
   int st1, ed1; //start and end position
   int c; //counter
 
@@ -248,7 +285,6 @@ static int cmp_overlap (struct bs *bs1, struct bs *bs2, struct output **output_h
     }
 
     for (j = bs2; j; j = j->next) {
-//      if (i->ed >= j->st && i->st <= j->ed) { //checking the overlapping
       if (ed1 >= j->st && st1 <= j->ed) { //checking the overlapping
         if (!c) { //ov_head is added only once
           ga_output_add(ov_head, i->line); //caution: the order is reversed
@@ -256,47 +292,58 @@ static int cmp_overlap (struct bs *bs1, struct bs *bs2, struct output **output_h
         }
         c++;
         if(!cf) {
-          if (add_one_val(ga_line_out, i->line, "Over\n") < 0) {
-            LOG("error: output line is too long.");
-            goto err;
+          sprintf(ga_line_out, "%s", i->line);
+          ga_line_out[strlen(ga_line_out) - 1] = '\t'; //\n was replaced by \t
+
+          if (p2) {
+            if (strlen(ga_line_out) + strlen(j->line) + 1 < LINE_STR_LEN) strncat(ga_line_out, j->line, strlen(j->line));
+            ga_line_out[strlen(ga_line_out) - 1] = '\t'; //\n was replaced by \t
           }
+
+          if (strlen(ga_line_out) + strlen("Over\n") + 1 < LINE_STR_LEN) strncat(ga_line_out, "Over\n", strlen("Over\n"));
+
           ga_output_add(output_head, ga_line_out); //caution: the order is reversed
           break;
-        }
-      }
-    }
+        } //if !cf
+        j_tmp = j; //preserving overlapping line2
+      } //if overlap
+    } //for j
     if (cf && c) { //if at least one peak was overlapped for i
-      sprintf(tmp, "Over\t%d\n", c);
-      if (add_one_val(ga_line_out, i->line, tmp) < 0) {
-        LOG("error: output line is too long.");
-        goto err;
+      sprintf(ga_line_out, "%s", i->line);
+      ga_line_out[strlen(ga_line_out) - 1] = '\t';
+
+      if (p2) {
+        if (strlen(ga_line_out) + strlen(j_tmp->line) + 1 < LINE_STR_LEN) strncat(ga_line_out, j_tmp->line, strlen(j_tmp->line));
+        ga_line_out[strlen(ga_line_out) - 1] = '\t';
       }
+
+      sprintf(tmp, "Over\t%d\n", c);
+      if (strlen(ga_line_out) + strlen(tmp) + 1 < LINE_STR_LEN) strncat(ga_line_out, tmp, strlen(tmp));
+
       ga_output_add(output_head, ga_line_out); //caution: the order is reversed
-    }
-//    if (j == NULL) { //if i is not overlapped with any bs2
+    } //if cf && c
     if (!c) { //if i is not overlapped with any bs2
       ga_output_add(nonov_head, i->line); //caution: the order is reversed
       novnb += 1.0; //non-overlapping peak number
-      if (cf) {
-        if (add_one_val(ga_line_out, i->line, "NonOver\t0\n") < 0) {
-          LOG("error: output line is too long.");
-          goto err;
-        }
-        ga_output_add(output_head, ga_line_out); //caution: the order is reversed
-      } else {
-        if (add_one_val(ga_line_out, i->line, "NonOver\n") < 0) {
-          LOG("error: output line is too long.");
-          goto err;
-        }
-        ga_output_add(output_head, ga_line_out); //caution: the order is reversed
+
+      sprintf(ga_line_out, "%s", i->line);
+      ga_line_out[strlen(ga_line_out) - 1] = '\t'; //\n was replaced by \t
+
+      if (p2) {
+        if (strlen(ga_line_out) + strlen(line2) + 1 < LINE_STR_LEN) strncat(ga_line_out, line2, strlen(line2));
       }
+
+      if (strlen(ga_line_out) + strlen("NonOver\t") + 1 < LINE_STR_LEN) strncat(ga_line_out, "NonOver\t", strlen("NonOver\t"));
+
+      if (cf) {
+        if (strlen(ga_line_out) + strlen("0\t") + 1 < LINE_STR_LEN) strncat(ga_line_out, "0\t", strlen("0\t"));
+      }
+      ga_line_out[strlen(ga_line_out) - 1] = '\n'; //\t was replaced by \n
+      ga_output_add(output_head, ga_line_out); //caution: the order is reversed
     }
     totnb += 1.0; //total peak number
   }
   return 0;
-
-err:
-  return -1;
 }
 
 

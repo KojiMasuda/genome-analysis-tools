@@ -78,7 +78,7 @@ void ga_output_append (struct output **out_head, const char *line)
  */
 void ga_parse_file_path (char *file_path, char *path, char *fn, char *ext)
 {
-  char tmp[FILE_STR_LEN];
+  char tmp[FILE_STR_LEN] = {0};
   char prev = '.', next;
   int i;
 

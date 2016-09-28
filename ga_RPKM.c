@@ -56,7 +56,7 @@ static int col_strand = 3;
 static int col_ex_st = 9;
 static int col_ex_ed = 10;
 char *ga_header_line = NULL; //header line. Note this is external global variable
-static char ga_line_out[LINE_STR_LEN]; //output line
+static char ga_line_out[LINE_STR_LEN] = {0}; //output line
 
 static const Argument args[] = {
   {"-h"           , ARGUMENT_TYPE_FUNCTION, usage        },
@@ -90,16 +90,16 @@ int main (int argc, char *argv[])
   struct output *output_head = NULL; //for output
 
   /*path, filename, and extension*/
-  char path_ref[PATH_STR_LEN];
-  char fn_ref[FILE_STR_LEN];
-  char ext_ref[EXT_STR_LEN];
-  char path_exp[PATH_STR_LEN];
-  char fn_exp[FILE_STR_LEN];
-  char ext_exp[EXT_STR_LEN];
-  char output_name[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN]; //output file name
-  char tmp[LINE_STR_LEN];
-  char exon_st_tmp[10000], exon_ed_tmp[10000]; //exon positions, like "123,456,"
-  char exon_st[80], exon_ed[80]; //exon position like "123"
+  char path_ref[PATH_STR_LEN] = {0};
+  char fn_ref[FILE_STR_LEN] = {0};
+  char ext_ref[EXT_STR_LEN] = {0};
+  char path_exp[PATH_STR_LEN] = {0};
+  char fn_exp[FILE_STR_LEN] = {0};
+  char ext_exp[EXT_STR_LEN] = {0};
+  char output_name[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN] = {0}; //output file name
+  char tmp[LINE_STR_LEN] = {0};
+  char exon_st_tmp[10000] = {0}, exon_ed_tmp[10000] = {0}; //exon positions, like "123,456,"
+  char exon_st[80] = {0}, exon_ed[80] = {0}; //exon position like "123"
   char *end; //for strtoul
   unsigned long arr_ex_st[1000]; //array of exon positions
   unsigned long arr_ex_ed[1000];

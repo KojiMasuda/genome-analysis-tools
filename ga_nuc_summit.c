@@ -50,7 +50,7 @@ static char *smt = NULL; //summit file
 static char *fa = NULL; //fasta
 static char *gt = NULL; //genome table
 static char *n_flag = NULL; //nuc flag
-static char ga_line_out[LINE_STR_LEN]; //output line with nucleotide composition
+static char ga_line_out[LINE_STR_LEN] = {0}; //output line with nucleotide composition
 static int col_chr = 0;
 static int col_st = 1;
 static int col_ed = 2;
@@ -82,11 +82,11 @@ static const Argument args[] = {
 int main (int argc, char *argv[])
 {
   /*path, filename, and extension*/
-  char path[PATH_STR_LEN];
-  char fn[FILE_STR_LEN];
-  char ext[EXT_STR_LEN];
-  char output_name[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN]; //output file name
-  char tmp[80]; //the value for each window
+  char path[PATH_STR_LEN] = {0};
+  char fn[FILE_STR_LEN] = {0};
+  char ext[EXT_STR_LEN] = {0};
+  char output_name[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN] = {0}; //output file name
+  char tmp[80] = {0}; //the value for each window
   char *frag; //fragment
 
   int winNb, w; //window number

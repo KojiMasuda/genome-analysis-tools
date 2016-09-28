@@ -61,7 +61,7 @@ static int col_ed = 2;
 static int col_strand = -1;
 static int hw = 1000; //half window size
 char *ga_header_line = NULL; //header line. Note this is external global variable
-static char ga_line_out[LINE_STR_LEN]; //output line including relative pos, smt_mean, CI95.00percent_U, CI95.00percent_L, smtNb, Centered, Signal
+static char ga_line_out[LINE_STR_LEN] = {0}; //output line including relative pos, smt_mean, CI95.00percent_U, CI95.00percent_L, smtNb, Centered, Signal
 
 static const Argument args[] = {
   {"-h"           , ARGUMENT_TYPE_FUNCTION, usage        },
@@ -96,16 +96,16 @@ int main (int argc, char *argv[])
   struct output *output_head = NULL; //for output
 
   /*path, filename, and extension*/
-  char path_smt[PATH_STR_LEN];
-  char fn_smt[FILE_STR_LEN];
-  char ext_smt[EXT_STR_LEN];
-  char path_sig[PATH_STR_LEN];
-  char fn_sig[FILE_STR_LEN];
-  char ext_sig[EXT_STR_LEN];
-  char path_sig_d[PATH_STR_LEN];
-  char fn_sig_d[FILE_STR_LEN];
-  char ext_sig_d[EXT_STR_LEN];
-  char output_name[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN]; //output file name
+  char path_smt[PATH_STR_LEN] = {0};
+  char fn_smt[FILE_STR_LEN] = {0};
+  char ext_smt[EXT_STR_LEN] = {0};
+  char path_sig[PATH_STR_LEN] = {0};
+  char fn_sig[FILE_STR_LEN] = {0};
+  char ext_sig[EXT_STR_LEN] = {0};
+  char path_sig_d[PATH_STR_LEN] = {0};
+  char fn_sig_d[FILE_STR_LEN] = {0};
+  char ext_sig_d[EXT_STR_LEN] = {0};
+  char output_name[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN] = {0}; //output file name
 
   time_t timer;
 
@@ -225,7 +225,7 @@ static int sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr
   int fl, fl_d;
   long st, ed, tmp_st, tmp_ed;
   float val_tmp, val_tmp_d;
-  char tmp[64], tag[10];
+  char tmp[64] = {0}, tag[10] = {0};
 
   for (ch_smt = chr_block_headsmt; ch_smt; ch_smt = ch_smt->next) {
     for (ch_sig = chr_block_headsig; ch_sig; ch_sig = ch_sig->next) {

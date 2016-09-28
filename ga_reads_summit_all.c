@@ -64,7 +64,7 @@ static int hw = 1000; //half window size
 static int step = 10; //step size
 static int win = 25; //window size
 char *ga_header_line = NULL; //header line. Note this is external global variable
-static char ga_line_out[LINE_STR_LEN]; //output line including relative pos, smt_mean, CI95.00percent_U, CI95.00percent_L, smtNb, Centered, Signal
+static char ga_line_out[LINE_STR_LEN] = {0}; //output line including relative pos, smt_mean, CI95.00percent_U, CI95.00percent_L, smtNb, Centered, Signal
 
 static const Argument args[] = {
   {"-h"           , ARGUMENT_TYPE_FUNCTION, usage        },
@@ -105,14 +105,14 @@ int main (int argc, char *argv[])
   long smtNb, c;
 
   /*path, filename, and extension*/
-  char path_smt[PATH_STR_LEN];
-  char fn_smt[FILE_STR_LEN];
-  char ext_smt[EXT_STR_LEN];
-  char path_sig[PATH_STR_LEN];
-  char fn_sig[FILE_STR_LEN];
-  char ext_sig[EXT_STR_LEN];
-  char output_name[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN]; //output file name
-  char str_tmp[32]; //for each value with \t
+  char path_smt[PATH_STR_LEN] = {0};
+  char fn_smt[FILE_STR_LEN] = {0};
+  char ext_smt[EXT_STR_LEN] = {0};
+  char path_sig[PATH_STR_LEN] = {0};
+  char fn_sig[FILE_STR_LEN] = {0};
+  char ext_sig[EXT_STR_LEN] = {0};
+  char output_name[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN] = {0}; //output file name
+  char str_tmp[32] = {0}; //for each value with \t
 
   time_t timer;
 
