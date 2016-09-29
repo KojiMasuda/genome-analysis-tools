@@ -82,6 +82,8 @@ struct ref {
   char *ex_st;
   char *ex_ed;
   char *line;
+  char *rm_ex_st;
+  char *rm_ex_ed;
   char *ov_gene;
   double ov_prop;
   struct ref *next;

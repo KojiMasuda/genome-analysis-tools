@@ -18,6 +18,7 @@
   "%s:line%d:%s(): " m "\n", \
   __FILE__, __LINE__, __FUNCTION__)
 
+static int make_exon_arr (unsigned long arr[], char *exon);
 
 static void usage()
 {
@@ -98,9 +99,6 @@ int main (int argc, char *argv[])
   char ext_exp[EXT_STR_LEN] = {0};
   char output_name[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN] = {0}; //output file name
   char tmp[LINE_STR_LEN] = {0};
-  char exon_st_tmp[10000] = {0}, exon_ed_tmp[10000] = {0}; //exon positions, like "123,456,"
-  char exon_st[80] = {0}, exon_ed[80] = {0}; //exon position like "123"
-  char *end; //for strtoul
   unsigned long arr_ex_st[1000]; //array of exon positions
   unsigned long arr_ex_ed[1000];
   unsigned long st;
@@ -108,7 +106,7 @@ int main (int argc, char *argv[])
   unsigned long ed;
   unsigned long tmp_ed;
   unsigned long exon_len;
-  int fl, c, e, e_tmp, exon_nb;
+  int fl, c, exon_nb;
   double val;
 
   time_t timer;
@@ -164,49 +162,11 @@ time:                              %s\n",\
     j1_tmp = NULL; //the "marker" of signal position to speed up the calc. j1_tmp is the left most position for each ref.
     for (r = ch_ref -> ref_list; r; r = r -> next) {
       fl = 0; //init of flag
-      e = 0; //char position for exon
-      e_tmp = 0; //char position for tmp exon
-      c = 0; //number of exon
-      memset(exon_st_tmp, '\0', sizeof(exon_st_tmp));
-      memset(exon_ed_tmp, '\0', sizeof(exon_ed_tmp));
-      strncpy(exon_st_tmp, r -> ex_st, sizeof(exon_st_tmp) - 1); //exon st positions, like "123,456,"
-      strncpy(exon_ed_tmp, r -> ex_ed, sizeof(exon_ed_tmp) - 1); //exon ed positions, like "234,567,"
       val = 0;
       exon_len = 0;
 
-      while(exon_st_tmp[e_tmp] != '\0') {
-        if (exon_st_tmp[e_tmp] == ',') {
-          exon_st[e] = '\0';
-          arr_ex_st[c] = strtoul(exon_st, &end, 0);
-          e = 0;
-          e_tmp++;
-          c++;
-          continue;
-        } else {
-          exon_st[e] = exon_st_tmp[e_tmp]; //extracting start pos of each exon
-        }
-        e++;
-        e_tmp++;
-      } //exon start
-
-      e = 0;
-      e_tmp = 0;
-      c = 0;
-      while(exon_ed_tmp[e_tmp] != '\0') {
-        if (exon_ed_tmp[e_tmp] == ',') {
-          exon_ed[e] = '\0';
-          arr_ex_ed[c] = strtoul(exon_ed, &end, 0);
-          e = 0;
-          e_tmp++;
-          c++;
-          continue;
-        } else {
-          exon_ed[e] = exon_ed_tmp[e_tmp]; //extracting end pos of each exon
-        }
-        e++;
-        e_tmp++;
-      } //exon end
-      exon_nb = c; //exon number
+      exon_nb = make_exon_arr (arr_ex_st, r -> ex_st);
+      exon_nb = make_exon_arr (arr_ex_ed, r -> ex_ed);
 
       for (c = 0; c < exon_nb; c++) {
         st = arr_ex_st[c] - 1; //-1 because bedgraph is zero-based, exon st also should be zero-based
@@ -277,3 +237,92 @@ err:
   if (ga_header_line) free(ga_header_line);
   return -1;
 }
+
+/*
+ * this makes array of exon positions and returns exon number
+ * arr: array of exon positions
+ * exon: char pointer to exon such as "123,456,".
+ */
+static int make_exon_arr (unsigned long arr[], char *exon)
+{
+  char ex[80] = {0}; //one exon position like "123".
+  char *end;
+  int c, e, e_tmp;
+
+  e = 0; //char position for exon
+  e_tmp = 0; //char position for tmp exon
+  c = 0; //number of exon
+  while(exon[e_tmp] != '\0') {
+    if (exon[e_tmp] == ',') {
+      ex[e] = '\0';
+      arr[c] = strtoul(ex, &end, 0);
+      e = 0;
+      e_tmp++;
+      c++;
+      continue;
+    } else {
+      ex[e] = exon[e_tmp]; //extracting start pos of each exon
+    }
+    e++;
+    e_tmp++;
+  } //exon start
+
+  return c;
+}
+
+/*
+static int reassign_exon (struct chr_block *chr_block_headref, thresh = 0.5)
+{
+
+  struct chr_block *ch;
+  struct ref *i, *j;
+  char exon_st[80] = {0} , exon_ed[80] = {0}; //exon position like "123".
+  char *end;
+  unsigned long arr_exi_st[1000];
+  unsigned long arr_exi_ed[1000];
+  unsigned long arr_exj_st[1000];
+  unsigned long arr_exj_ed[1000];
+  int c, e, e_tmp, exon_nb;
+
+  for (ch = chr_block_headref; ch; ch = ch -> next) {
+    for (i = ch -> ref_list; i; i = i -> next) {
+      e = 0; //char position for exon
+      e_tmp = 0; //char position for tmp exon
+      c = 0; //number of exon
+      while(i -> ex_st[e_tmp] != '\0') {
+        if (i -> ex_st[e_tmp] == ',') {
+          exon_st[e] = '\0';
+          arr_exi_st[c] = strtoul(exon_st, &end, 0);
+          e = 0;
+          e_tmp++;
+          c++;
+          continue;
+        } else {
+          exon_st[e] = i -> ex_st[e_tmp]; //extracting start pos of each exon
+        }
+        e++;
+        e_tmp++;
+      } //exon start
+
+
+      for (j = ch -> ref_list; j; j = j -> next) {
+      } //for j(gene)
+    } //for i(gene)
+  } //for chr
+
+  return 0;
+} */
+
+
+
+
+
+
+
+
+
+
+
+
+
+

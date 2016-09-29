@@ -600,6 +600,8 @@ static int ref_append (const char *chr, struct chr_block **chr_block_head, const
   p -> ex_st = strdup(ex_st); //assigning exon start
   p -> ex_ed = strdup(ex_ed); //assigning exon end
   p -> line = strdup(line); //assigning line
+  p -> rm_ex_st = NULL; //at this point, rm_ex_st is null.
+  p -> rm_ex_ed = NULL; //at this point, rm_ex_ed is null.
   p -> ov_gene = NULL; //at this point, ov_gene is null.
 
   for (ch = *chr_block_head; ch; ch = ch->next) { //checking chr is already in chr_block list
