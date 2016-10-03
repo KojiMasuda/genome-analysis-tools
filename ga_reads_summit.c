@@ -9,6 +9,7 @@
 #include "sort_list.h"
 #include "argument.h"
 #include "ga_math.h"
+#include "ga_my.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -185,28 +186,12 @@ time:                            %s\n",\
   printf("smtnb:%ld\n", smtNb);
 
   //allocating arrays
-  arr = (float*)malloc((((2 * hw) / step + 1) * smtNb)*sizeof(float)); //output arr, 1d
-  if (arr == NULL) {
-    LOG("error: lack of memory.");
-    goto err;
-  }
-  arr_tmp = (float*)malloc(smtNb*sizeof(float)); //output arr, 1d
-  if (arr_tmp == NULL) {
-    LOG("error: lack of memory.");
-    goto err;
-  }
+  arr = (float*)my_malloc((((2 * hw) / step + 1) * smtNb)*sizeof(float)); //output arr, 1d
+  arr_tmp = (float*)my_malloc(smtNb*sizeof(float)); //output arr, 1d
 
   if (filesig_d) {//if denominator
-    arr_d = (float*)malloc((((2 * hw) / step + 1) * smtNb)*sizeof(float)); //output arr, 1d
-    if (arr_d == NULL) {
-      LOG("error: lack of memory.");
-      goto err;
-    }
-    arr_tmp_d = (float*)malloc(smtNb*sizeof(float)); //output arr, 1d
-    if (arr_tmp_d == NULL) {
-      LOG("error: lack of memory.");
-      goto err;
-    }
+    arr_d = (float*)my_malloc((((2 * hw) / step + 1) * smtNb)*sizeof(float)); //output arr, 1d
+    arr_tmp_d = (float*)my_malloc(smtNb*sizeof(float)); //output arr, 1d
   }
 
   if (filesig_m) { //letting calculation of anti-strand reads mode on
@@ -227,16 +212,8 @@ time:                            %s\n",\
     }
 
     //allocating arrays
-    arr_a = (float*)malloc((((2 * hw) / step + 1) * smtNb)*sizeof(float)); //output arr, 1d
-    if (arr_a == NULL) {
-      LOG("error: lack of memory.");
-      goto err;
-    }
-    arr_tmp_a = (float*)malloc(smtNb*sizeof(float)); //output arr, 1d
-    if (arr_tmp_a == NULL) {
-      LOG("error: lack of memory.");
-      goto err;
-    }
+    arr_a = (float*)my_malloc((((2 * hw) / step + 1) * smtNb)*sizeof(float)); //output arr, 1d
+    arr_tmp_a = (float*)my_malloc(smtNb*sizeof(float)); //output arr, 1d
     sig_count_anti (chr_block_headsmt, chr_block_headsig, chr_block_headsig_m, arr, arr_a, smtNb); //counting the signal. This process is the heart of the program!
   } else {
     sig_count (chr_block_headsmt, chr_block_headsig, arr, smtNb); //counting the signal. This process is the heart of the program!
@@ -341,41 +318,17 @@ time:                            %s\n",\
   //the random simulation starts here.
   ga_parse_chr_bs(filegenome, &chr_block_headg, 0, 1, 1, -1, 0); //reading genome table
 
-  arr_r = (float*)malloc((((2 * hw) / step + 1) * randnb)*sizeof(float)); //output arr, 1d
-  if (arr_r == NULL) {
-    LOG("error: lack of memory.");
-    goto err;
-  }
-  arr_r_tmp = (float*)malloc(randnb * sizeof(float)); //output arr, 1d
-  if (arr_r_tmp == NULL) {
-    LOG("error: lack of memory.");
-    goto err;
-  }
+  arr_r = (float*)my_malloc((((2 * hw) / step + 1) * randnb)*sizeof(float)); //output arr, 1d
+  arr_r_tmp = (float*)my_malloc(randnb * sizeof(float)); //output arr, 1d
 
   if (filesig_d) {
-    arr_r_d = (float*)malloc((((2 * hw) / step + 1) * randnb)*sizeof(float)); //output arr, 1d
-    if (arr_r_d == NULL) {
-      LOG("error: lack of memory.");
-      goto err;
-    }
-    arr_r_d_tmp = (float*)malloc(randnb * sizeof(float)); //output arr, 1d
-    if (arr_r_d_tmp == NULL) {
-      LOG("error: lack of memory.");
-      goto err;
-    }
+    arr_r_d = (float*)my_malloc((((2 * hw) / step + 1) * randnb)*sizeof(float)); //output arr, 1d
+    arr_r_d_tmp = (float*)my_malloc(randnb * sizeof(float)); //output arr, 1d
   }
 
   if (filesig_m) {
-    arr_r_a = (float*)malloc((((2 * hw) / step + 1) * randnb)*sizeof(float)); //output arr, 1d
-    if (arr_r_a == NULL) {
-      LOG("error: lack of memory.");
-      goto err;
-    }
-    arr_r_a_tmp = (float*)malloc(randnb * sizeof(float)); //output arr, 1d
-    if (arr_r_a_tmp == NULL) {
-      LOG("error: lack of memory.");
-      goto err;
-    }
+    arr_r_a = (float*)my_malloc((((2 * hw) / step + 1) * randnb)*sizeof(float)); //output arr, 1d
+    arr_r_a_tmp = (float*)my_malloc(randnb * sizeof(float)); //output arr, 1d
   }
 
   for (r = 0; r < randnb; r++) {
@@ -478,18 +431,18 @@ time:                            %s\n",\
   goto rtfree;
 
 rtfree:
-  if (arr) free(arr);
-  if (arr_tmp) free(arr_tmp);
-  if (arr_d) free(arr_d);
-  if (arr_tmp_d) free(arr_tmp_d);
-  if (arr_a) free(arr_a);
-  if (arr_tmp_a) free(arr_tmp_a);
-  if (arr_r) free(arr_r);
-  if (arr_r_tmp) free(arr_r_tmp);
-  if (arr_r_d) free(arr_r_d);
-  if (arr_r_d_tmp) free(arr_r_d_tmp);
-  if (arr_r_a) free(arr_r_a);
-  if (arr_r_a_tmp) free(arr_r_a_tmp);
+  if (arr) my_free(arr);
+  if (arr_tmp) my_free(arr_tmp);
+  if (arr_d) my_free(arr_d);
+  if (arr_tmp_d) my_free(arr_tmp_d);
+  if (arr_a) my_free(arr_a);
+  if (arr_tmp_a) my_free(arr_tmp_a);
+  if (arr_r) my_free(arr_r);
+  if (arr_r_tmp) my_free(arr_r_tmp);
+  if (arr_r_d) my_free(arr_r_d);
+  if (arr_r_d_tmp) my_free(arr_r_d_tmp);
+  if (arr_r_a) my_free(arr_r_a);
+  if (arr_r_a_tmp) my_free(arr_r_a_tmp);
   if (chr_block_headsmt) ga_free_chr_block(&chr_block_headsmt);
   if (chr_block_headsig) ga_free_chr_block(&chr_block_headsig);
   if (chr_block_headsig_d) ga_free_chr_block(&chr_block_headsig_d);
@@ -500,23 +453,23 @@ rtfree:
   if (output_headr) ga_free_output(&output_headr);
   if (output_head_a) ga_free_output(&output_head_a);
   if (output_headr_a) ga_free_output(&output_headr_a);
-  if (ga_header_line) free(ga_header_line);
+  if (ga_header_line) my_free(ga_header_line);
 
   return 0;
 
 err:
-  if (arr) free(arr);
-  if (arr_tmp) free(arr_tmp);
-  if (arr_d) free(arr_d);
-  if (arr_tmp_d) free(arr_tmp_d);
-  if (arr_a) free(arr_a);
-  if (arr_tmp_a) free(arr_tmp_a);
-  if (arr_r) free(arr_r);
-  if (arr_r_tmp) free(arr_r_tmp);
-  if (arr_r_d) free(arr_r_d);
-  if (arr_r_d_tmp) free(arr_r_d_tmp);
-  if (arr_r_a) free(arr_r_a);
-  if (arr_r_a_tmp) free(arr_r_a_tmp);
+  if (arr) my_free(arr);
+  if (arr_tmp) my_free(arr_tmp);
+  if (arr_d) my_free(arr_d);
+  if (arr_tmp_d) my_free(arr_tmp_d);
+  if (arr_a) my_free(arr_a);
+  if (arr_tmp_a) my_free(arr_tmp_a);
+  if (arr_r) my_free(arr_r);
+  if (arr_r_tmp) my_free(arr_r_tmp);
+  if (arr_r_d) my_free(arr_r_d);
+  if (arr_r_d_tmp) my_free(arr_r_d_tmp);
+  if (arr_r_a) my_free(arr_r_a);
+  if (arr_r_a_tmp) my_free(arr_r_a_tmp);
   if (chr_block_headsmt) ga_free_chr_block(&chr_block_headsmt);
   if (chr_block_headsig) ga_free_chr_block(&chr_block_headsig);
   if (chr_block_headsig_d) ga_free_chr_block(&chr_block_headsig_d);
@@ -527,7 +480,7 @@ err:
   if (output_headr) ga_free_output(&output_headr);
   if (output_head_a) ga_free_output(&output_head_a);
   if (output_headr_a) ga_free_output(&output_headr_a);
-  if (ga_header_line) free(ga_header_line);
+  if (ga_header_line) my_free(ga_header_line);
   return -1;
 }
 

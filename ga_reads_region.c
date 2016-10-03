@@ -8,6 +8,7 @@
 #include "write_tab.h"
 #include "sort_list.h"
 #include "argument.h"
+#include "ga_my.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -197,22 +198,22 @@ time:                            %s\n",\
   goto rtfree;
 
 rtfree:
-  if (ga_header_line) free (ga_header_line);
+  if (ga_header_line) my_free (ga_header_line);
   if (chr_block_headsmt) ga_free_chr_block(&chr_block_headsmt);
   if (chr_block_headsig) ga_free_chr_block(&chr_block_headsig);
   if (chr_block_headsig_d) ga_free_chr_block(&chr_block_headsig_d);
   if (output_head) ga_free_output(&output_head);
-  if (ga_header_line) free(ga_header_line);
+  if (ga_header_line) my_free(ga_header_line);
 
   return 0;
 
 err:
-  if (ga_header_line) free (ga_header_line);
+  if (ga_header_line) my_free (ga_header_line);
   if (chr_block_headsmt) ga_free_chr_block(&chr_block_headsmt);
   if (chr_block_headsig) ga_free_chr_block(&chr_block_headsig);
   if (chr_block_headsig_d) ga_free_chr_block(&chr_block_headsig_d);
   if (output_head) ga_free_output(&output_head);
-  if (ga_header_line) free(ga_header_line);
+  if (ga_header_line) my_free(ga_header_line);
   return -1;
 }
 

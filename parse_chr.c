@@ -6,6 +6,7 @@
  */
 
 #include "parse_chr.h"
+#include "ga_my.h"
 
 #define LOG(m) \
   fprintf(stderr, \
@@ -18,7 +19,7 @@ static int chr_block_append (const char *chr, struct chr_block **chr_block_head)
 static int chr_block_fa_append (struct chr_block_fa **chr_block_head, const char *chr, const char *letter);
 static struct bs *bs_add (const char *chr, struct chr_block **chr_block_head, const unsigned long st, const unsigned long ed, const char strand, const char *line);
 static struct sig *sig_add (const char *chr, struct chr_block **chr_block_head, const unsigned long st, const unsigned long ed, const float val);
-static int ref_append (const char *chr, struct chr_block **chr_block_head, const unsigned long st, const unsigned long ed, const char strand, const char *ex_st, const char *ex_ed, const char *line);
+static int ref_append (const char *chr, struct chr_block **chr_block_head, const unsigned long st, const unsigned long ed, const char strand, const char *ex_st, const char *ex_ed, const char *gene, const char *line);
 static char *pickup_str (const char *str, const int st);
 
 /*pointer which must be freed: char *ga_header_line */
@@ -68,13 +69,13 @@ void ga_parse_chr_bs (const char *filename, struct chr_block **chr_block_head, i
     if (col_strand >= 0) {
       strand = extract_val_line(line, col_strand , '\t');
       bs_add (chr, chr_block_head, strtoul(st, &e, 10), strtoul(ed, &e, 10), strand[0], line); //adding bs with strand info
-      free(strand);
+      my_free(strand);
     } else {
       bs_add (chr, chr_block_head, strtoul(st, &e, 10), strtoul(ed, &e, 10), '.', line); //adding bs
     }
-    free(chr);
-    free(st);
-    free(ed);
+    my_free(chr);
+    my_free(st);
+    my_free(ed);
   }
 
   fclose(fp);
@@ -96,12 +97,13 @@ err:
  * col_strand: column num of strand
  * col_ex_st: column num of exon start
  * col_ex_ed: column num of exon end
+ * col_gene: column num of gene
  * hf: header flag. If 1, header is obtained from the first line of input file and pointed by global variable, ga_header_line.
  */
-int ga_parse_chr_ref (const char *filename, struct chr_block **chr_block_head, int col_chr, int col_st, int col_ed, int col_strand, int col_ex_st, int col_ex_ed, int hf)
+int ga_parse_chr_ref (const char *filename, struct chr_block **chr_block_head, int col_chr, int col_st, int col_ed, int col_strand, int col_ex_st, int col_ex_ed, int col_gene, int hf)
 {
   char line[LINE_STR_LEN] = {0};
-  char *chr, *st, *ed, *strand, *ex_st, *ex_ed, *e;
+  char *chr, *st, *ed, *strand, *ex_st, *ex_ed, *gene, *e;
   FILE *fp;
   if ((fp = fopen (filename, "r")) == NULL) {
     LOG("errer: input file cannot be open.");
@@ -131,6 +133,7 @@ int ga_parse_chr_ref (const char *filename, struct chr_block **chr_block_head, i
     ed  = extract_val_line(line, col_ed , '\t');
     ex_st  = extract_val_line(line, col_ex_st , '\t');
     ex_ed  = extract_val_line(line, col_ex_ed , '\t');
+    gene = extract_val_line(line, col_gene , '\t');
     if(chr_block_append (chr, chr_block_head) != 0){ //appending chr link list (if the chr is already linked, the input chr is just ignored)
       LOG("error: error in chr_block_append function.");
       goto err;
@@ -138,22 +141,23 @@ int ga_parse_chr_ref (const char *filename, struct chr_block **chr_block_head, i
 
     if (col_strand >= 0) {
       strand = extract_val_line(line, col_strand , '\t');
-      if (ref_append (chr, chr_block_head, strtoul(st, &e, 10), strtoul(ed, &e, 10), strand[0], ex_st, ex_ed, line) != 0){ //appending ref
+      if (ref_append (chr, chr_block_head, strtoul(st, &e, 10), strtoul(ed, &e, 10), strand[0], ex_st, ex_ed, gene, line) != 0){ //appending ref
         LOG("error: error in ref_append function.");
         goto err;
       }
-      free(strand);
+      my_free(strand);
     } else {
-      if (ref_append (chr, chr_block_head, strtoul(st, &e, 10), strtoul(ed, &e, 10), '.', ex_st, ex_ed, line) != 0){ //appending ref
+      if (ref_append (chr, chr_block_head, strtoul(st, &e, 10), strtoul(ed, &e, 10), '.', ex_st, ex_ed, gene, line) != 0){ //appending ref
         LOG("error: error in ref_append function.");
         goto err;
       }
     }
-    free(chr);
-    free(st);
-    free(ed);
-    free(ex_st);
-    free(ex_ed);
+    my_free(chr);
+    my_free(st);
+    my_free(ed);
+    my_free(ex_st);
+    my_free(ex_ed);
+    my_free(gene);
   }
 
   fclose(fp);
@@ -161,12 +165,13 @@ int ga_parse_chr_ref (const char *filename, struct chr_block **chr_block_head, i
 
 err:
   fclose(fp);
-  if (chr) free(chr);
-  if (st) free(st);
-  if (ed) free(ed);
-  if (ex_st) free(ex_st);
-  if (ex_ed) free(ex_ed);
-  if (strand) free(strand);
+  if (chr) my_free(chr);
+  if (st) my_free(st);
+  if (ed) my_free(ed);
+  if (ex_st) my_free(ex_st);
+  if (ex_ed) my_free(ex_ed);
+  if (gene) my_free(gene);
+  if (strand) my_free(strand);
   return -1;
 }
 
@@ -206,7 +211,7 @@ int ga_parse_chr_fa (const char *filename, struct chr_block_fa **chr_block_head,
           LOG("error: error in chr_block_fa_append function.");
           goto err;
         }
-        free(letter);
+        my_free(letter);
         letter = NULL;
       }
 
@@ -224,7 +229,7 @@ int ga_parse_chr_fa (const char *filename, struct chr_block_fa **chr_block_head,
         printf("error: chromosome '%s' is not found in genome table file.\n", chr_tmp);
         goto err;
       }
-      letter = (char*)calloc(ch->bs_list->st + 10000, sizeof(char)); //allocating letter for each chromosome
+      letter = (char*)my_calloc(ch->bs_list->st + 10000, sizeof(char)); //allocating letter for each chromosome
       j = 0; //reset j
     } else { //if letter
 /*      i = 0; //this one is slow...
@@ -262,12 +267,12 @@ int ga_parse_chr_fa (const char *filename, struct chr_block_fa **chr_block_head,
     goto err;
   }
 
-  free(letter);
+  my_free(letter);
   fclose(fp);
   return 0;
 
 err:
-  if (letter) free(letter);
+  if (letter) my_free(letter);
   fclose(fp);
   return -1;
 }
@@ -344,10 +349,10 @@ void ga_parse_bedgraph (const char *filename, struct chr_block **chr_block_head)
     val = extract_val_line(line, 3, '\t');
     chr_block_add (chr, chr_block_head); //adding chr link list (if the chr is already linked, the input chr is just ignored)
     sig_add (chr, chr_block_head, strtoul(st, &e, 10), strtoul(ed, &e, 10), atof(val)); //adding bs
-    free(chr);
-    free(st);
-    free(ed);
-    free(val);
+    my_free(chr);
+    my_free(st);
+    my_free(ed);
+    my_free(val);
   }
 
   fclose(fp);
@@ -369,11 +374,7 @@ static char *extract_val_line (const char *line, int col, const char sep) {
   int x = 0, i = 0, j = 0;
   int len = strlen(line);
   
-  char *strtemp = calloc (len, sizeof(char));
-  if (strtemp == NULL) {
-    LOG("error: lack of memory.");
-    goto err;
-  }
+  char *strtemp = (char *)my_calloc (len, sizeof(char));
 
   while (line[i] != '\0' && line[i] != '\n' && x <= col) {
     if (line[i] == sep) {
@@ -397,7 +398,7 @@ static char *extract_val_line (const char *line, int col, const char sep) {
   return (strtemp);
 
 err:
-  if (strtemp) free(strtemp);
+  if (strtemp) my_free(strtemp);
   return (NULL);
 }
 
@@ -416,11 +417,7 @@ static struct chr_block *chr_block_add (const char *chr, struct chr_block **chr_
     if (!strcmp(chr, ch->chr)) return (NULL);
   }
 
-  p = malloc(sizeof(struct chr_block));
-  if (p == NULL) {
-    LOG("error: lack of memory.");
-    goto err;
-  }
+  p = my_malloc(sizeof(struct chr_block));
   p -> chr = strdup(chr); //assigning chromosome name
 
   /*initialization of bs and sig block*/
@@ -433,9 +430,6 @@ static struct chr_block *chr_block_add (const char *chr, struct chr_block **chr_
 
   return (p);
 
-err:
-  if (p) free(p);
-  return (NULL);
 }
 
 /*pointer which must be freed: struct chr_block *p, p->chr*/
@@ -453,11 +447,7 @@ static int chr_block_append (const char *chr, struct chr_block **chr_block_head)
     if (!strcmp(chr, ch->chr)) return 0;
   }
 
-  p = malloc(sizeof(struct chr_block));
-  if (p == NULL) {
-    LOG("error: lack of memory.");
-    goto err;
-  }
+  p = my_malloc(sizeof(struct chr_block));
   p -> chr = strdup(chr); //assigning chromosome name
 
   /*initialization of bs and sig block*/
@@ -476,9 +466,6 @@ static int chr_block_append (const char *chr, struct chr_block **chr_block_head)
 
   return 0;
 
-err:
-  if (p) free(p);
-  return -1;
 }
 
 /*pointer which must be freed: p(if needed), p->chr, p->letter*/
@@ -492,11 +479,7 @@ static int chr_block_fa_append (struct chr_block_fa **chr_block_head, const char
 {
   struct chr_block_fa *p;
 
-  p = malloc(sizeof(struct chr_block_fa));
-  if (p == NULL) {
-    LOG("error: lack of memory.");
-    goto err;
-  }
+  p = my_malloc(sizeof(struct chr_block_fa));
   p -> chr = strdup(chr); //assigning chromosome name
   p -> letter = strdup(letter); //assigning letter for chromosome
   p -> letter_len = (unsigned long)strlen(letter); //storing letter length
@@ -511,10 +494,6 @@ static int chr_block_fa_append (struct chr_block_fa **chr_block_head, const char
   p -> next = NULL;
 
   return 0;
-
-err:
-  if (p) free(p);
-  return -1;
 }
 
 /*pointer which must be freed: struct bs *p, p->line, */
@@ -532,11 +511,7 @@ static struct bs *bs_add (const char *chr, struct chr_block **chr_block_head, co
   struct bs *p;
   struct chr_block *ch;
 
-  p = malloc(sizeof(struct bs));
-  if (p == NULL) {
-    LOG("error: lack of memory.");
-    goto err;
-  }
+  p = my_malloc(sizeof(struct bs));
   p -> st = st; //assigning start position
   p -> ed = ed; //assigning end position
   p -> strand = strand; //assigning strand info
@@ -568,7 +543,7 @@ static struct bs *bs_add (const char *chr, struct chr_block **chr_block_head, co
   return (p);
 
 err:
-  if (p) free (p);
+  if (p) my_free (p);
   return (NULL);
 }
 
@@ -584,22 +559,19 @@ err:
  * *ex_ed: pointer to exon end positions
  * *line: pointer to each line which is read
  */
-static int ref_append (const char *chr, struct chr_block **chr_block_head, const unsigned long st, const unsigned long ed, const char strand, const char *ex_st, const char *ex_ed, const char *line)
+static int ref_append (const char *chr, struct chr_block **chr_block_head, const unsigned long st, const unsigned long ed, const char strand, const char *ex_st, const char *ex_ed, const char *gene, const char *line)
 {
   struct ref *p;
   struct chr_block *ch;
 
-  p = malloc(sizeof(struct ref));
-  if (p == NULL) {
-    LOG("error: lack of memory.");
-    goto err;
-  }
+  p = my_malloc(sizeof(struct ref));
   p -> st = st; //assigning start position
   p -> ed = ed; //assigning end position
   p -> strand = strand; //assigning strand info
   p -> ex_st = strdup(ex_st); //assigning exon start
   p -> ex_ed = strdup(ex_ed); //assigning exon end
   p -> line = strdup(line); //assigning line
+  p -> gene = strdup(gene); //assigning gene
   p -> rm_ex_st = NULL; //at this point, rm_ex_st is null.
   p -> rm_ex_ed = NULL; //at this point, rm_ex_ed is null.
   p -> ov_gene = NULL; //at this point, ov_gene is null.
@@ -629,7 +601,7 @@ static int ref_append (const char *chr, struct chr_block **chr_block_head, const
   return 0;
 
 err:
-  if (p) free (p);
+  if (p) my_free (p);
   return -1;
 }
 
@@ -647,11 +619,7 @@ static struct sig *sig_add (const char *chr, struct chr_block **chr_block_head, 
   struct sig *p;
   struct chr_block *ch;
 
-  p = malloc(sizeof(struct sig));
-  if (p == NULL) {
-    LOG("error: lack of memory.");
-    goto err;
-  }
+  p = my_malloc(sizeof(struct sig));
   p -> st = st; //assigning start position
   p -> ed = ed; //assigning end position
   p -> val = val; //assigning value
@@ -679,7 +647,7 @@ static struct sig *sig_add (const char *chr, struct chr_block **chr_block_head, 
   return (p);
 
 err:
-  if (p) free (p);
+  if (p) my_free (p);
   return (NULL);
 }
 
@@ -741,10 +709,10 @@ void ga_parse_sepwiggz (const char *filename, struct chr_block **chr_block_head)
         if (span_tmp!=NULL) {
           span = pickup_str (span_tmp, 5);
           span_val = atoi(span);
-          if (span) free(span);
-          free(span_tmp);
+          if (span) my_free(span);
+          my_free(span_tmp);
         }
-        if (chr_tmp) free(chr_tmp);
+        if (chr_tmp) my_free(chr_tmp);
         break;
       } else if (!strcmp(step, "fixedStep")) {
         chr_tmp  = extract_val_line(line, 1, '\t');
@@ -762,14 +730,14 @@ void ga_parse_sepwiggz (const char *filename, struct chr_block **chr_block_head)
         if (span_tmp!=NULL) {
           span = pickup_str (span_tmp, 5);
           span_val = atoi(span);
-          if (span) free(span);
-          free(span_tmp);
+          if (span) my_free(span);
+          my_free(span_tmp);
         }
-        if (chr_tmp) free(chr_tmp);
-        if (st_tmp) free(st_tmp);
-        if (start) free(start);
-        if (step_tmp) free(step_tmp);
-        if (step_p) free(step_p);
+        if (chr_tmp) my_free(chr_tmp);
+        if (st_tmp) my_free(st_tmp);
+        if (start) my_free(start);
+        if (step_tmp) my_free(step_tmp);
+        if (step_p) my_free(step_p);
         break;
       }
     }
@@ -780,21 +748,21 @@ void ga_parse_sepwiggz (const char *filename, struct chr_block **chr_block_head)
         val_tmp = extract_val_line(line, 1, '\t');
         st = strtoul(st_tmp, &e, 10);
         sig_add (chr, chr_block_head, st, st + span_val, atof(val_tmp));
-        free(st_tmp);
-        free(val_tmp);
+        my_free(st_tmp);
+        my_free(val_tmp);
       }
     } else if (!strcmp(step, "fixedStep")) {
       while (gzgets(gfp, line, LINE_STR_LEN * sizeof(char)) != NULL) { //reading each line
         val_tmp = extract_val_line(line, 0, '\t');
         sig_add (chr, chr_block_head, st, st + span_val, atof(val_tmp));
-        free(val_tmp);
+        my_free(val_tmp);
         st += step_val;
       }
     }
   }
 
-  if (chr) free(chr);
-  if (step) free(step);
+  if (chr) my_free(chr);
+  if (step) my_free(step);
   gzclose(gfp);
   fclose(fp);
 
@@ -809,16 +777,16 @@ void ga_parse_sepwiggz (const char *filename, struct chr_block **chr_block_head)
 err:
   gzclose(gfp);
   fclose(fp);
-  if (step) free(step);
-  if (chr) free(chr);
-  if (chr_tmp) free(chr_tmp);
-  if (span) free(span);
-  if (span_tmp) free(span_tmp);
-  if (val_tmp) free(val_tmp);
-  if (st_tmp) free(st_tmp);
-  if (start) free(start);
-  if (step_tmp) free(step_tmp);
-  if (step_p) free(step_p);
+  if (step) my_free(step);
+  if (chr) my_free(chr);
+  if (chr_tmp) my_free(chr_tmp);
+  if (span) my_free(span);
+  if (span_tmp) my_free(span_tmp);
+  if (val_tmp) my_free(val_tmp);
+  if (st_tmp) my_free(st_tmp);
+  if (start) my_free(start);
+  if (step_tmp) my_free(step_tmp);
+  if (step_p) my_free(step_p);
   return;
 }
 
@@ -860,10 +828,10 @@ void ga_parse_onewiggz (const char *filename, struct chr_block **chr_block_head)
       if (span_tmp!=NULL) {
         span = pickup_str (span_tmp, 5);
         span_val = atoi(span);
-        if (span) free(span);
-        free(span_tmp);
+        if (span) my_free(span);
+        my_free(span_tmp);
       }
-      if (chr_tmp) free(chr_tmp);
+      if (chr_tmp) my_free(chr_tmp);
       fl = 1; //with the flag, the program can read the value.
       strcpy(stephold, step);
       continue;
@@ -883,14 +851,14 @@ void ga_parse_onewiggz (const char *filename, struct chr_block **chr_block_head)
       if (span_tmp!=NULL) {
         span = pickup_str (span_tmp, 5);
         span_val = atoi(span);
-        if (span) free(span);
-        free(span_tmp);
+        if (span) my_free(span);
+        my_free(span_tmp);
       }
-      if (chr_tmp) free(chr_tmp);
-      if (st_tmp) free(st_tmp);
-      if (start) free(start);
-      if (step_tmp) free(step_tmp);
-      if (step_p) free(step_p);
+      if (chr_tmp) my_free(chr_tmp);
+      if (st_tmp) my_free(st_tmp);
+      if (start) my_free(start);
+      if (step_tmp) my_free(step_tmp);
+      if (step_p) my_free(step_p);
       fl = 1; //with the flag, the program can read the value
       strcpy(stephold, step);
       continue;
@@ -899,34 +867,34 @@ void ga_parse_onewiggz (const char *filename, struct chr_block **chr_block_head)
       val_tmp = extract_val_line(line, 1, ' ');
       st = strtoul(st_tmp, &e, 10);
       sig_add (chr, chr_block_head, st, st + span_val, atof(val_tmp));
-      free(st_tmp);
-      free(val_tmp);
+      my_free(st_tmp);
+      my_free(val_tmp);
     } else if (fl && !strcmp(stephold, "fixedStep")) {
       val_tmp = extract_val_line(line, 0, ' ');
       sig_add (chr, chr_block_head, st, st + span_val, atof(val_tmp));
-      free(val_tmp);
+      my_free(val_tmp);
       st += step_val;
     }
   }
 
-  if (chr) free(chr);
-  if (step) free(step);
+  if (chr) my_free(chr);
+  if (step) my_free(step);
   gzclose(gfp);
 
   return;
 
 err:
   gzclose(gfp);
-  if (step) free(step);
-  if (chr) free(chr);
-  if (chr_tmp) free(chr_tmp);
-  if (span) free(span);
-  if (span_tmp) free(span_tmp);
-  if (val_tmp) free(val_tmp);
-  if (st_tmp) free(st_tmp);
-  if (start) free(start);
-  if (step_tmp) free(step_tmp);
-  if (step_p) free(step_p);
+  if (step) my_free(step);
+  if (chr) my_free(chr);
+  if (chr_tmp) my_free(chr_tmp);
+  if (span) my_free(span);
+  if (span_tmp) my_free(span_tmp);
+  if (val_tmp) my_free(val_tmp);
+  if (st_tmp) my_free(st_tmp);
+  if (start) my_free(start);
+  if (step_tmp) my_free(step_tmp);
+  if (step_p) my_free(step_p);
   return;
 }
 
@@ -940,11 +908,7 @@ static char *pickup_str (const char *str, const int st) {
   int i;
   int len = strlen(str);
 
-  char *strtemp = calloc (len, sizeof(char));
-  if (strtemp == NULL) {
-    LOG("error: lack of memory.");
-    goto err;
-  }
+  char *strtemp = my_calloc (len, sizeof(char));
 
   for (i = 0; ;i++) {
     strtemp[i] = str[i+st];
@@ -952,10 +916,6 @@ static char *pickup_str (const char *str, const int st) {
   }
 
   return strtemp;
-
-err:
-  if (strtemp) free(strtemp);
-  return (NULL);
 }
 
 /*
@@ -991,21 +951,24 @@ void ga_free_chr_block (struct chr_block **chr_block)
 
     if (ch->bs_init) {
       while (bs) {
-        free(bs->line);
+        my_free(bs->line);
         bs_tmp = bs->next;
-        free(bs);
+        my_free(bs);
         bs = bs_tmp;
       }
     }
 
     if (ch->ref_init) {
       while (ref) {
-        free(ref->ex_st);
-        free(ref->ex_ed);
-        if (NULL != ref->ov_gene) free(ref->ov_gene);
-        free(ref->line);
+        my_free(ref->ex_st);
+        my_free(ref->ex_ed);
+        if (NULL != ref->rm_ex_st) my_free(ref->rm_ex_st);
+        if (NULL != ref->rm_ex_ed) my_free(ref->rm_ex_ed);
+        if (NULL != ref->gene) my_free(ref->gene);
+        if (NULL != ref->ov_gene) my_free(ref->ov_gene);
+        my_free(ref->line);
         ref_tmp = ref->next;
-        free(ref);
+        my_free(ref);
         ref = ref_tmp;
       }
     }
@@ -1013,14 +976,14 @@ void ga_free_chr_block (struct chr_block **chr_block)
     if (ch->sig_init) {
       while (sig) {
         sig_tmp = sig->next;
-        free(sig);
+        my_free(sig);
         sig = sig_tmp;
       }
     }
 
-    free(ch->chr);
+    my_free(ch->chr);
     ch_tmp = ch->next;
-    free(ch);
+    my_free(ch);
     ch = ch_tmp;
   }
 
@@ -1037,10 +1000,10 @@ void ga_free_chr_block_fa (struct chr_block_fa **chr_block)
 
   ch = *chr_block;
   while (ch) {
-    free(ch->chr);
-    free(ch->letter);
+    my_free(ch->chr);
+    my_free(ch->letter);
     ch_tmp = ch->next;
-    free(ch);
+    my_free(ch);
     ch = ch_tmp;
   }
 

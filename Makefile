@@ -1,13 +1,13 @@
 CC=gcc
-OBJS1=ga_overlap.o parse_chr.o write_tab.o argument.o
-OBJS2=ga_reads_summit.o parse_chr.o write_tab.o argument.o sort_list.o ga_math.o
-OBJS3=ga_reads_summit_all.o parse_chr.o write_tab.o argument.o sort_list.o ga_math.o
-OBJS4=ga_calc_dist.o parse_chr.o write_tab.o argument.o sort_list.o
-OBJS5=ga_reads_region.o parse_chr.o write_tab.o argument.o sort_list.o
-OBJS6=ga_deltaG.o parse_chr.o write_tab.o argument.o
-OBJS7=ga_nuc_region.o parse_chr.o write_tab.o argument.o sort_list.o
-OBJS8=ga_nuc_summit.o parse_chr.o write_tab.o argument.o sort_list.o
-OBJS9=ga_RPKM.o parse_chr.o write_tab.o argument.o sort_list.o
+OBJS1=ga_overlap.o parse_chr.o write_tab.o argument.o ga_my.o
+OBJS2=ga_reads_summit.o parse_chr.o write_tab.o argument.o sort_list.o ga_math.o ga_my.o
+OBJS3=ga_reads_summit_all.o parse_chr.o write_tab.o argument.o sort_list.o ga_math.o ga_my.o
+OBJS4=ga_calc_dist.o parse_chr.o write_tab.o argument.o sort_list.o ga_my.o
+OBJS5=ga_reads_region.o parse_chr.o write_tab.o argument.o sort_list.o ga_my.o
+OBJS6=ga_deltaG.o parse_chr.o write_tab.o argument.o ga_my.o
+OBJS7=ga_nuc_region.o parse_chr.o write_tab.o argument.o sort_list.o ga_my.o
+OBJS8=ga_nuc_summit.o parse_chr.o write_tab.o argument.o sort_list.o ga_my.o
+OBJS9=ga_RPKM.o parse_chr.o write_tab.o argument.o sort_list.o ga_my.o
 
 TARGET=ga_overlap ga_reads_summit ga_reads_summit_all ga_calc_dist ga_reads_region ga_deltaG ga_nuc_region ga_nuc_summit ga_RPKM
 #CFLAGS+=-O3

@@ -7,6 +7,7 @@
 #include "parse_chr.h"
 #include "write_tab.h"
 #include "argument.h"
+#include "ga_my.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -131,7 +132,7 @@ time:                            %s\n",\
     goto err;
   }
 
-  frag = (char *)malloc(sizeof(char) * (win + 1)); //fragment DNA from genome
+  frag = (char *)my_malloc(sizeof(char) * (win + 1)); //fragment DNA from genome
   for (ch = chr_block_head; ch; ch = ch->next) {
     printf("calculating on %s \n", ch->chr);
 
@@ -209,14 +210,14 @@ time:                            %s\n",\
 
   ga_free_chr_block_fa(&chr_block_head);
   ga_free_chr_block(&chr_block_head_gt);
-  free(frag);
+  my_free(frag);
   return 0;
 
 err:
   gzclose(gfp);
   if (chr_block_head) ga_free_chr_block_fa(&chr_block_head);
   if (chr_block_head_gt) ga_free_chr_block(&chr_block_head_gt);
-  if (frag) free(frag);
+  if (frag) my_free(frag);
   return -1;
 }
 

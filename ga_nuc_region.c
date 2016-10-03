@@ -8,6 +8,7 @@
 #include "write_tab.h"
 #include "argument.h"
 #include "sort_list.h"
+#include "ga_my.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -120,7 +121,7 @@ time:                            %s\n",\
   }
   ga_parse_file_path (rgn, path, fn, ext); //parsing input file name into path, file name, and extension
 
-  frag = (char *)malloc(sizeof(char) * (max_len + 2)); //fragment DNA from genome
+  frag = (char *)my_malloc(sizeof(char) * (max_len + 2)); //fragment DNA from genome
   for (ch1 = chr_block_head_rgn; ch1; ch1 = ch1->next) {
     for (ch2 = chr_block_head_fa; ch2; ch2 = ch2->next) {
       if (!(strcmp(ch1->chr, ch2->chr))) break;
@@ -174,19 +175,19 @@ time:                            %s\n",\
   }
   else ga_write_lines (output_name, out_head, ga_header_line);
 
-  if(ga_header_line) free (ga_header_line);
+  if(ga_header_line) my_free (ga_header_line);
   ga_free_chr_block_fa(&chr_block_head_fa);
   ga_free_chr_block(&chr_block_head_rgn);
   ga_free_chr_block(&chr_block_head_gt);
-  free(frag);
+  my_free(frag);
   return 0;
 
 err:
-  if(ga_header_line) free (ga_header_line);
+  if(ga_header_line) my_free (ga_header_line);
   if (chr_block_head_fa) ga_free_chr_block_fa(&chr_block_head_fa);
   if (chr_block_head_rgn) ga_free_chr_block(&chr_block_head_rgn);
   if (chr_block_head_gt) ga_free_chr_block(&chr_block_head_gt);
-  if (frag) free(frag);
+  if (frag) my_free(frag);
   return -1;
 }
 

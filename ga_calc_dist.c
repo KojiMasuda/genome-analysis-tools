@@ -8,6 +8,7 @@
 #include "write_tab.h"
 #include "argument.h"
 #include "sort_list.h"
+#include "ga_my.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -150,7 +151,7 @@ time:                            %s\n",\
     }
     else ga_write_lines (output_name, output_head, ga_header_line);
 
-    if (ga_header_line) free(ga_header_line);
+    if (ga_header_line) my_free(ga_header_line);
     ga_free_chr_block(&chr_block_head1);
     ga_free_chr_block(&chr_block_head2);
 
@@ -179,7 +180,7 @@ time:                            %s\n",\
     sprintf(output_name, "%s%s_ISD%s", path1, fn1, ext1);
     ga_write_lines (output_name, output_head, "chromosome\tInter_Summit_Distance\n");
 
-    if (ga_header_line) free(ga_header_line);
+    if (ga_header_line) my_free(ga_header_line);
     ga_free_chr_block(&chr_block_head1);
     ga_free_output(&output_head);
 
@@ -190,7 +191,7 @@ time:                            %s\n",\
   }
 
 err:
-  if (ga_header_line) free(ga_header_line);
+  if (ga_header_line) my_free(ga_header_line);
   if (chr_block_head1) ga_free_chr_block(&chr_block_head1);
   if (chr_block_head2) ga_free_chr_block(&chr_block_head2);
 

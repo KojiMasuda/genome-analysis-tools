@@ -8,6 +8,7 @@
 #include "write_tab.h"
 #include "sort_list.h"
 #include "argument.h"
+#include "ga_my.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -166,18 +167,10 @@ time:                            %s\n",\
   printf("smtnb:%ld\n", smtNb);
 
   //allocating arrays
-  arr = (float*)malloc((((2 * hw) / step + 1) * smtNb)*sizeof(float)); //output arr, 1d
-  if (arr == NULL) {
-    LOG("error: lack of memory.");
-    goto err;
-  }
+  arr = (float*)my_malloc((((2 * hw) / step + 1) * smtNb)*sizeof(float)); //output arr, 1d
 
   if (filesig_d) {//if denominator
-    arr_d = (float*)malloc((((2 * hw) / step + 1) * smtNb)*sizeof(float)); //output arr, 1d
-    if (arr_d == NULL) {
-      LOG("error: lack of memory.");
-      goto err;
-    }
+    arr_d = (float*)my_malloc((((2 * hw) / step + 1) * smtNb)*sizeof(float)); //output arr, 1d
   }
 
   sig_count (chr_block_headsmt, chr_block_headsig, arr, smtNb); //counting the signal. This process is the heart of the program!
@@ -367,24 +360,24 @@ time:                            %s\n",\
   goto rtfree;
 
 rtfree:
-  if (arr) free(arr);
-  if (arr_d) free(arr_d);
+  if (arr) my_free(arr);
+  if (arr_d) my_free(arr_d);
   if (chr_block_headsmt) ga_free_chr_block(&chr_block_headsmt);
   if (chr_block_headsig) ga_free_chr_block(&chr_block_headsig);
   if (chr_block_headsig_d) ga_free_chr_block(&chr_block_headsig_d);
   if (output_head) ga_free_output(&output_head);
-  if (ga_header_line) free(ga_header_line);
+  if (ga_header_line) my_free(ga_header_line);
 
   return 0;
 
 err:
-  if (arr) free(arr);
-  if (arr_d) free(arr_d);
+  if (arr) my_free(arr);
+  if (arr_d) my_free(arr_d);
   if (chr_block_headsmt) ga_free_chr_block(&chr_block_headsmt);
   if (chr_block_headsig) ga_free_chr_block(&chr_block_headsig);
   if (chr_block_headsig_d) ga_free_chr_block(&chr_block_headsig_d);
   if (output_head) ga_free_output(&output_head);
-  if (ga_header_line) free(ga_header_line);
+  if (ga_header_line) my_free(ga_header_line);
   return -1;
 }
 

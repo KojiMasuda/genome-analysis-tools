@@ -8,6 +8,7 @@
 #include "write_tab.h"
 #include "argument.h"
 #include "sort_list.h"
+#include "ga_my.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -137,7 +138,7 @@ time:                            %s\n",\
   }
   ga_parse_file_path (smt, path, fn, ext); //parsing input file name into path, file name, and extension
 
-  frag = (char *)malloc(sizeof(char) * (win + 1)); //allocating memory for fragment DNA from genome
+  frag = (char *)my_malloc(sizeof(char) * (win + 1)); //allocating memory for fragment DNA from genome
   winNb = (2 * hw) / step + 1; //window number
 
   for (ch1 = chr_block_head_smt; ch1; ch1 = ch1->next) {
@@ -247,19 +248,19 @@ time:                            %s\n",\
 
   ga_write_lines (output_name, out_head, ga_line_out);
 
-  if(ga_header_line) free(ga_header_line);
+  if(ga_header_line) my_free(ga_header_line);
   ga_free_chr_block_fa(&chr_block_head_fa);
   ga_free_chr_block(&chr_block_head_smt);
   ga_free_chr_block(&chr_block_head_gt);
-  free(frag);
+  my_free(frag);
   return 0;
 
 err:
-  if(ga_header_line) free(ga_header_line);
+  if(ga_header_line) my_free(ga_header_line);
   if (chr_block_head_fa) ga_free_chr_block_fa(&chr_block_head_fa);
   if (chr_block_head_smt) ga_free_chr_block(&chr_block_head_smt);
   if (chr_block_head_gt) ga_free_chr_block(&chr_block_head_gt);
-  if (frag) free(frag);
+  if (frag) my_free(frag);
   return -1;
 }
 

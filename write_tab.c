@@ -7,6 +7,7 @@
 
 #include "write_tab.h"
 #include "parse_chr.h"
+#include "ga_my.h"
 
 #define LOG(m) \
   fprintf(stderr, \
@@ -25,11 +26,7 @@ struct output *ga_output_add (struct output **out_head, const char *line)
 {
   struct output *p;
   
-  p = malloc(sizeof(struct output));
-  if (p == NULL) {
-    LOG("error: lack of memory.");
-    return (NULL);
-  }
+  p = my_malloc(sizeof(struct output));
   p -> line = strdup(line);
 
   p -> next = *out_head;
@@ -48,11 +45,7 @@ void ga_output_append (struct output **out_head, const char *line)
 {
   struct output *p;
   
-  p = malloc(sizeof(struct output));
-  if (p == NULL) {
-    LOG("error: lack of memory.");
-    return;
-  }
+  p = my_malloc(sizeof(struct output));
   p -> line = strdup(line);
 
   if (*out_head == NULL) { //if the line is the first one
@@ -138,7 +131,7 @@ static void get_path (char *str, const char *delim, char *path, size_t path_len,
       fprintf(stderr, "path string length is over %lu.\n", path_len * sizeof(char));
       goto err;
     }
-    free(tmp);
+    my_free(tmp);
     tmp = NULL;
   }
 
@@ -150,14 +143,14 @@ static void get_path (char *str, const char *delim, char *path, size_t path_len,
     goto err;
   }
 
-  free(tmp);
-  free(strp);
+  my_free(tmp);
+  my_free(strp);
 
   return;
 
 err:
-  if (strp) free(strp);
-  if (tmp) free(tmp);
+  if (strp) my_free(strp);
+  if (tmp) my_free(tmp);
 
   return;
 }
@@ -227,9 +220,9 @@ void ga_free_output (struct output **out_head)
 
   o = *out_head;
   while (o) {
-    free(o->line);
+    my_free(o->line);
     tmp = o->next;
-    free(o);
+    my_free(o);
     o = tmp;
   }
 
