@@ -24,8 +24,7 @@ static int reassign_exon (struct ref *ref);
 
 static void usage()
 {
-  printf("Tool:    genome analysis\n\n\
-Program: ga_RPKM\n\
+  printf("Tool:    ga_RPKM\n\n\
 Summary: report the expression level as reads per kilobase per million mapped reads (RPKM)\n\n\
 Usage:   ga_RPKM [options] -exp <expression file in bedgraph format> -ref <reference file> -readlen <read length(default:101)>\n\
 or       ga_RPKM [options] -exp <expression file in bedgraph format> -ref <reference file> -readlen <read length(default:101)> --consid_ov --thresh <threshold(default:0.5)>\n\n\
@@ -53,7 +52,9 @@ static void version()
 
 
 static int hf = 0;
+static char hfs[4] = "off\0";
 static int cf = 0;
+static char cfs[4] = "off\0";
 static char *fileexp = NULL;
 static char *fileref = NULL;
 static int readlen = 101;
@@ -123,21 +124,21 @@ int main (int argc, char *argv[])
 
   time_t timer;
 
-
+  if(hf) strcpy(hfs, "on\0");
+  if(cf) strcpy(cfs, "on\0");
   time(&timer);
-  printf("Program:                           %s\n\
-Tools:                             genome analysis tools\n\n\
+  printf("Tool:                            %s\n\n\
 Input expression file:             %s\n\
 Input reference file:              %s\n\
 Read length:                       %d\n\
 ref col of chr, start, end, strand:%d, %d, %d, %d\n\
 ref col exon start, end:           %d, %d\n\
 ref col gene:                      %d\n\
-header flag:                       %d\n\
-consider overlapping?:             %d\n\
+header flag:                       %s\n\
+consider overlapping?:             %s\n\
 threshold:                         %.3f\n\
 time:                              %s\n",\
- "ga_RPKM", fileexp, fileref, readlen, col_chr, col_st, col_ed, col_strand, col_ex_st, col_ex_ed, col_gene, hf, cf, thresh, ctime(&timer) );
+ "ga_RPKM", fileexp, fileref, readlen, col_chr, col_st, col_ed, col_strand, col_ex_st, col_ex_ed, col_gene, hfs, cfs, thresh, ctime(&timer) );
 
   ga_parse_file_path (fileexp, path_exp, fn_exp, ext_exp); //parsing input file name into path, file name, and extension
   ga_parse_file_path (fileref, path_ref, fn_ref, ext_ref);

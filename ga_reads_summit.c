@@ -27,8 +27,7 @@ static void sig_count_anti (struct chr_block *chr_block_headsmt, struct chr_bloc
 
 static void usage()
 {
-  printf("Tool:    genome analysis\n\n\
-Program: ga_reads_summit\n\
+  printf("Tool:    ga_reads_summit\n\n\
 Summary: report the average distribution of signals around summits\n\n\
 Usage:   ga_reads_summit [options] --smt <file_summit> --sig <file_signal> --sigfmt <sig format:bedgraph | sepwiggz | onewiggz>\n\n\
 Options:\n\
@@ -57,6 +56,7 @@ static void version()
 
 
 static int hf = 0;
+static char hfs[4] = "off\0";
 static char *filesmt = NULL;
 static char *filesig = NULL;
 static char *filesig_d = NULL;
@@ -129,14 +129,16 @@ int main (int argc, char *argv[])
   char path_sig[PATH_STR_LEN] = {0};
   char fn_sig[FILE_STR_LEN] = {0};
   char ext_sig[EXT_STR_LEN] = {0};
+  char path_sig_d[PATH_STR_LEN] = {0};
+  char fn_sig_d[FILE_STR_LEN] = {0};
+  char ext_sig_d[EXT_STR_LEN] = {0};
   char output_name[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN] = {0}; //output file name
 
   time_t timer;
 
-
+  if(hf) strcpy(hfs, "on\0");
   time(&timer);
-  printf("Program:                         %s\n\
-Tools:                           genome analysis tools\n\n\
+  printf("Tool:                            %s\n\n\
 Input file summit:               %s\n\
 Input file signal:               %s\n\
 Input file signal denominator:   %s\n\
@@ -148,13 +150,14 @@ summit col strand?:              %d\n\
 half range:                      %d\n\
 step size:                       %d\n\
 win size:                        %d\n\
-header flag:                     %d\n\
+header flag:                     %s\n\
 random simulation?:              %d\n\
 time:                            %s\n",\
- "ga_reads_summit", filesmt, filesig, filesig_d, filesig_m, sigfmt, filegenome, col_chr, col_st, col_ed, col_strand, hw, step, win, hf, randnb, ctime(&timer) );
+ "ga_reads_summit", filesmt, filesig, filesig_d, filesig_m, sigfmt, filegenome, col_chr, col_st, col_ed, col_strand, hw, step, win, hfs, randnb, ctime(&timer) );
 
   ga_parse_file_path (filesmt, path_smt, fn_smt, ext_smt); //parsing input file name into path, file name, and extension
   ga_parse_file_path (filesig, path_sig, fn_sig, ext_sig);
+  if(filesig_d) ga_parse_file_path (filesig_d, path_sig_d, fn_sig_d, ext_sig_d);
 
   ga_parse_chr_bs(filesmt, &chr_block_headsmt, col_chr, col_st, col_ed, col_strand, hf); //parsing each binding sites for each chromosome
 
@@ -284,7 +287,8 @@ time:                            %s\n",\
   if (filesig_m) {
     sprintf(output_name, "%s%s_around_%s_halfwid%dwinsize%dstep%d_sense.txt", path_sig, fn_sig, fn_smt, hw, win, step);
   } else {
-    sprintf(output_name, "%s%s_around_%s_halfwid%dwinsize%dstep%d.txt", path_sig, fn_sig, fn_smt, hw, win, step);
+    if (filesig_d) sprintf(output_name, "%s%s_divided_%s_around_%s_halfwid%dwinsize%dstep%d.txt", path_sig, fn_sig, fn_sig_d, fn_smt, hw, win, step);
+    else sprintf(output_name, "%s%s_around_%s_halfwid%dwinsize%dstep%d.txt", path_sig, fn_sig, fn_smt, hw, win, step);
   }
   ga_write_lines (output_name, output_head, "relative_pos\tsmt_mean\tCI95.00percent_U\tCI95.00percent_L\tsmtNb\tCentered\tSignal\n");
 
@@ -424,7 +428,8 @@ time:                            %s\n",\
     sprintf(output_name, "%s%s_around_%s_halfwid%dwinsize%dstep%d_anti_random%d.txt", path_sig, fn_sig, fn_smt, hw, win, step, randnb);
     ga_write_lines (output_name, output_headr_a, "relative_pos\tsmt_mean\tCI95.00percent_U\tCI95.00percent_L\tsmtNb\tCentered\tSignal\n");
   } else {
-    sprintf(output_name, "%s%s_around_%s_halfwid%dwinsize%dstep%d_random%d.txt", path_sig, fn_sig, fn_smt, hw, win, step, randnb);
+    if (filesig_d) sprintf(output_name, "%s%s_divided_%s_around_%s_halfwid%dwinsize%dstep%d_random%d.txt", path_sig, fn_sig, fn_sig_d, fn_smt, hw, win, step, randnb);
+    else sprintf(output_name, "%s%s_around_%s_halfwid%dwinsize%dstep%d_random%d.txt", path_sig, fn_sig, fn_smt, hw, win, step, randnb);
     ga_write_lines (output_name, output_headr, "relative_pos\tsmt_mean\tCI95.00percent_U\tCI95.00percent_L\tsmtNb\tCentered\tSignal\n");
   }
 

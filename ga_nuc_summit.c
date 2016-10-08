@@ -22,8 +22,7 @@
 
 static void usage()
 {
-  printf("Tool:    genome analysis\n\n\
-Program: ga_nuc_summit\n\
+  printf("Tool:    ga_nuc_summit\n\n\
 Summary: report the nucleotide composition(number of ATCG) or AT content around summit.\n\n\
 Usage:   ga_nuc_summit -fa <fasta> -smt <summit file> -gt <genome table> -n_flag <nucleotide flag:A | T | C | G | AT>\n\n\
 Options:\n\
@@ -57,6 +56,7 @@ static int col_st = 1;
 static int col_ed = 2;
 static int col_strand = -1;
 static int hf = 0;
+static char hfs[4] = "off\0";
 static int hw = 1000;
 static int step = 10;
 static int win = 100;
@@ -108,21 +108,21 @@ int main (int argc, char *argv[])
   argument_read(&argc, argv, args);//reading arguments
   if (fa == NULL || smt == NULL || gt == NULL) usage();
 
+  if(hf) strcpy(hfs, "on\0");
   time(&timer);
-  printf("Program:                         %s\n\
-Tools:                           genome analysis tools\n\n\
+  printf("Tool:                            %s\n\n\
 fasta file:                      %s\n\
 summit file:                     %s\n\
 genome table:                    %s\n\
 nucleotide flag:                 %s\n\
-header in summit file?:          %d\n\
+header flag for summit file?:    %s\n\
 col for chr, start, end:         %d, %d, %d\n\
 col for strand?:                 %d\n\
 half range:                      %d\n\
 step size:                       %d\n\
 window size:                     %d\n\
 time:                            %s\n",\
- "ga_nuc_smt", fa, smt, gt, n_flag, hf, col_chr, col_st, col_ed, col_strand, hw, step, win, ctime(&timer) );
+ "ga_nuc_smt", fa, smt, gt, n_flag, hfs, col_chr, col_st, col_ed, col_strand, hw, step, win, ctime(&timer) );
 
   ga_parse_chr_bs (smt, &chr_block_head_smt, col_chr, col_st, col_ed, col_strand, hf); //parsing summit file
   chr_block_head_smt = ga_mergesort_chr(chr_block_head_smt); // sorting summit chr

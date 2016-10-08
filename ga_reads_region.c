@@ -24,9 +24,8 @@ static int sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr
 
 static void usage()
 {
-  printf("Tool:    genome analysis\n\n\
-Program: ga_reads_region\n\
-Summary: report the signals around summits or regions\n\n\
+  printf("Tool:    ga_reads_region\n\n\
+Summary: report the amount of reads inside regions\n\n\
 Usage:   ga_reads_region [options] --smt <file_summit> --sig <file_signal> --sigfmt <sig format:bedgraph | sepwiggz | onewiggz> --mode smt --col_smt <column of summit>\n\
    or:   ga_reads_region [options] --smt <file_summit> --sig <file_signal> --sigfmt <sig format:bedgraph | sepwiggz | onewiggz> --mode <region mode: region | up-tss | tss-dw | up-tss-dw | up-tes | tes-dw | up-tes-dw>\n\n\
 Options:\n\
@@ -51,6 +50,7 @@ static void version()
 
 
 static int hf = 0;
+static char hfs[4] = "off\0";
 static char *filesmt = NULL;
 static char *filesig = NULL;
 static char *filesig_d = NULL;
@@ -110,10 +110,9 @@ int main (int argc, char *argv[])
 
   time_t timer;
 
-
+  if(hf) strcpy(hfs, "on\0");
   time(&timer);
-  printf("Program:                         %s\n\
-Tools:                           genome analysis tools\n\n\
+  printf("Tool:                            %s\n\n\
 Input file summit:               %s\n\
 Input file signal:               %s\n\
 Input file signal denominator:   %s\n\
@@ -123,9 +122,9 @@ summit col of chr, start, end:   %d, %d, %d\n\
 summit col of summit:            %d\n\
 summit col strand?:              %d\n\
 half range:                      %d\n\
-header flag:                     %d\n\
+header flag:                     %s\n\
 time:                            %s\n",\
- "ga_reads_region", filesmt, filesig, filesig_d, sigfmt, region_mode, col_chr, col_st, col_ed, col_st, col_strand, hw, hf, ctime(&timer) );
+ "ga_reads_region", filesmt, filesig, filesig_d, sigfmt, region_mode, col_chr, col_st, col_ed, col_st, col_strand, hw, hfs, ctime(&timer) );
 
   ga_parse_file_path (filesmt, path_smt, fn_smt, ext_smt); //parsing input file name into path, file name, and extension
   ga_parse_file_path (filesig, path_sig, fn_sig, ext_sig);
@@ -181,7 +180,7 @@ time:                            %s\n",\
   }
 
   if (filesig_d) { //if denominator
-    sprintf(output_name, "%s%s_around_%s_halfwid%d_mode_%s_devided%s.txt", path_sig, fn_sig, fn_smt, hw, region_mode, fn_sig_d);
+    sprintf(output_name, "%s%s_around_%s_halfwid%d_mode_%s_divided_%s.txt", path_sig, fn_sig, fn_smt, hw, region_mode, fn_sig_d);
   } else {
     sprintf(output_name, "%s%s_around_%s_halfwid%d_mode_%s.txt", path_sig, fn_sig, fn_smt, hw, region_mode);
   }
@@ -287,38 +286,38 @@ static int sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr
         sprintf(tag, "tss"); //tag
       } else if (!strcmp(region_mode, "up-tss-dw")) {
         if (bs->strand == '-') {//if the region is on minus strand
-          st = bs->ed - hw * 2; //start pos
-          ed = bs->ed + hw * 2; //end pos
+          st = bs->ed - hw; //start pos
+          ed = bs->ed + hw; //end pos
         } else {
-          st = bs->st - hw * 2; //start pos
-          ed = bs->st + hw * 2; //end pos
+          st = bs->st - hw; //start pos
+          ed = bs->st + hw; //end pos
         }
         sprintf(tag, "tss"); //tag
       } else if (!strcmp(region_mode, "up-tes")) {
-        if (bs->strand == '+') {//if the region is on minus strand
-          st = bs->ed - hw * 2; //start pos
-          ed = bs->ed; //end pos
-        } else {
+        if (bs->strand == '-') {//if the region is on minus strand
           st = bs->st; //start pos
           ed = bs->st + hw * 2; //end pos
+        } else {
+          st = bs->ed - hw * 2; //start pos
+          ed = bs->ed; //end pos
         }
         sprintf(tag, "tes"); //tag
       } else if (!strcmp(region_mode, "tes-dw")) {
-        if (bs->strand == '+') {//if the region is on minus strand
-          st = bs->ed; //start pos
-          ed = bs->ed + hw * 2; //end pos
-        } else {
+        if (bs->strand == '-') {//if the region is on minus strand
           st = bs->st - hw * 2; //start pos
           ed = bs->st; //end pos
+        } else {
+          st = bs->ed; //start pos
+          ed = bs->ed + hw * 2; //end pos
         }
         sprintf(tag, "tes"); //tag
       } else if (!strcmp(region_mode, "up-tes-dw")) {
-        if (bs->strand == '+') {//if the region is on minus strand
-          st = bs->ed - hw * 2; //start pos
-          ed = bs->ed + hw * 2; //end pos
+        if (bs->strand == '-') {//if the region is on minus strand
+          st = bs->st - hw; //start pos
+          ed = bs->st + hw; //end pos
         } else {
-          st = bs->st - hw * 2; //start pos
-          ed = bs->st + hw * 2; //end pos
+          st = bs->ed - hw; //start pos
+          ed = bs->ed + hw; //end pos
         }
         sprintf(tag, "tes"); //tag
       } else {

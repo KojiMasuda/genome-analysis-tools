@@ -22,8 +22,7 @@
 
 static void usage()
 {
-  printf("Tool:    genome analysis\n\n\
-Program: ga_nuc_region\n\
+  printf("Tool:    ga_nuc_region\n\n\
 Summary: report the nucleotide composition(number of ATCG) and AT content.\n\n\
 Usage:   ga_nuc_region -fa <fasta> -region <region file> -gt <genome table>\n\n\
 Options:\n\
@@ -51,6 +50,7 @@ static int col_chr = 0;
 static int col_st = 1;
 static int col_ed = 2;
 static int hf = 0;
+static char hfs[4] = "off\0";
 
 static const Argument args[] = {
   {"-h"          , ARGUMENT_TYPE_FUNCTION, usage   },
@@ -91,16 +91,16 @@ int main (int argc, char *argv[])
   argument_read(&argc, argv, args);//reading arguments
   if (fa == NULL || rgn == NULL || gt == NULL) usage();
 
+  if(hf) strcpy(hfs, "on\0");
   time(&timer);
-  printf("Program:                         %s\n\
-Tools:                           genome analysis tools\n\n\
+  printf("Tool:                            %s\n\n\
 fasta file:                      %s\n\
 region file:                     %s\n\
 genome table:                    %s\n\
-header?:                         %d\n\
+header?:                         %s\n\
 col of chr, start, end:          %d, %d, %d\n\
 time:                            %s\n",\
- "ga_nuc_region", fa, rgn, gt, hf, col_chr, col_st, col_ed, ctime(&timer) );
+ "ga_nuc_region", fa, rgn, gt, hfs, col_chr, col_st, col_ed, ctime(&timer) );
 
   ga_parse_chr_bs (rgn, &chr_block_head_rgn, col_chr, col_st, col_ed, -1, hf); //parsing region file
   // sorting summit and sig

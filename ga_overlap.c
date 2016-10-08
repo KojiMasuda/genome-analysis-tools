@@ -24,8 +24,7 @@ static int cmp_overlap (struct bs *bs1, struct bs *bs2, struct output **output_h
 
 static void usage()
 {
-  printf("Tool:    genome analysis\n\n\
-Program: ga_overlap\n\
+  printf("Tool:    ga_overlap\n\n\
 Summary: report the overlaps of two peaks/summits\n\n\
 Usage:   ga_overlap [options] -1 <file1> -2 <file2>\n\
    or:   ga_overlap [options] -1 <file1> -2 <file2> --hw <half_window: int> --col_start1 <int> --col_end1 <int> ##col_start1 and col_end1 should be same for -hw option\n\n\
@@ -52,8 +51,11 @@ static void version()
 }
 
 static int hf = 0;
+static char hfs[4] = "off\0";
 static int cf = 0;
+static char cfs[4] = "off\0";
 static int p2 = 0;
+static char p2s[4] = "off\0";
 static int hw = 0;
 static char *file1 = NULL;
 static char *file2 = NULL;
@@ -114,19 +116,21 @@ int main (int argc, char *argv[])
   argument_read(&argc, argv, args);//reading arguments
   if (file1 == NULL || file2 == NULL) usage();
 
+  if(hf) strcpy(hfs, "on\0");
+  if(cf) strcpy(cfs, "on\0");
+  if(p2) strcpy(p2s, "on\0");
   time(&timer);
-  printf("Program:                         %s\n\
-Tools:                           genome analysis tools\n\n\
+  printf("Tool:                            %s\n\n\
 Input file1:                     %s\n\
 Input file2:                     %s\n\
 File1 column of chr, start, end: %d, %d, %d\n\
 File2 column of chr, start, end: %d, %d, %d\n\
-header flag:                     %d\n\
-counter flag:                    %d\n\
-preserve file2?:                 %d\n\
+header flag:                     %s\n\
+counter flag:                    %s\n\
+preserve file2?:                 %s\n\
 half window:                     %d\n\
 time:                            %s\n",\
- "ga_overlap", file1, file2, col_chr1, col_st1, col_ed1, col_chr2, col_st2, col_ed2, hf, cf, p2, hw, ctime(&timer) );
+ "ga_overlap", file1, file2, col_chr1, col_st1, col_ed1, col_chr2, col_st2, col_ed2, hfs, cfs, p2s, hw, ctime(&timer) );
 
   ga_parse_chr_bs(file2, &chr_block_head2, col_chr2, col_st2, col_ed2, -1, hf);
   if (p2 && NULL != ga_header_line) ga_header_line2 = strdup(ga_header_line); //preserving header2 

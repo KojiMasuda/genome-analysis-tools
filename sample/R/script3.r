@@ -1,0 +1,10 @@
+df <- read.delim ("sample/chip1/chip1_divided_input1_around_peak1_halfwid1000winsize25step10.txt")
+df_r <- read.delim ("sample/chip1/chip1_divided_input1_around_peak1_halfwid1000winsize25step10_random1000.txt")
+
+png("sample/chip1/chip1_divided_input1_around_peak1_halfwid1000winsize25step10_random1000.png")
+plot (df$relative_pos, df$smt_mean, col="blue", ylim=c(0.8,13), main="Enrichment of chip1 around peak1", ylab="Enrichment of chip1", xlab="Distance from peak1 (bp)", type="l", lwd=2)
+lines (df$relative_pos, df$CI95.00percent_U, col="blue", lty=2)
+lines (df$relative_pos, df$CI95.00percent_L, col="blue", lty=2)
+lines (df_r$relative_pos, df_r$smt_mean, col="black", lwd=2, lty=2)
+legend ("topright", c("chip1","random"), lwd=2, lty=c(1,2), col=c("blue","black"))
+dev.off()

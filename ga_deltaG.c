@@ -21,8 +21,7 @@
 
 static void usage()
 {
-  printf("Tool:    genome analysis\n\n\
-Program: ga_deltaG\n\
+  printf("Tool:    ga_deltaG\n\n\
 Summary: makes the wiggle file of the free energy(delta-G) difference between the duplex and single-strand states.\n\n\
 Usage:   ga_deltaG -fa <fasta file> -gt <genome table file> -lib <library name: SantaLucia_1996 | Breslauer_1986> -win <window size(int)> -step <step size(int)>\n\n\
 Options:\n\
@@ -86,8 +85,7 @@ int main (int argc, char *argv[])
   if (fa == NULL || gt == NULL || lib == NULL || !win || !step) usage();
 
   time(&timer);
-  printf("Program:                         %s\n\
-Tools:                           genome analysis tools\n\n\
+  printf("Tool:                            %s\n\n\
 fasta file:                      %s\n\
 genome table:                    %s\n\
 library:                         %s\n\

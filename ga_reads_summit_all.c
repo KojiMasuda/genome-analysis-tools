@@ -24,9 +24,8 @@ static void sig_count (struct chr_block *chr_block_headsmt, struct chr_block *ch
 
 static void usage()
 {
-  printf("Tool:    genome analysis\n\n\
-Program: ga_reads_summit_all\n\
-Summary: report the distribution of all signals around summits\n\n\
+  printf("Tool:    ga_reads_summit_all\n\n\
+Summary: report the read distributions around ALL summits\n\n\
 Usage:   ga_reads_summit_all [options] --smt <file_summit> --sig <file_signal> --sigfmt <sig format:bedgraph | sepwiggz | onewiggz>\n\n\
 Options:\n\
          -v: output version information and exit.\n\
@@ -52,6 +51,7 @@ static void version()
 
 
 static int hf = 0;
+static char hfs[4] = "off\0";
 static char *filesmt = NULL;
 static char *filesig = NULL;
 static char *filesig_d = NULL;
@@ -112,15 +112,17 @@ int main (int argc, char *argv[])
   char path_sig[PATH_STR_LEN] = {0};
   char fn_sig[FILE_STR_LEN] = {0};
   char ext_sig[EXT_STR_LEN] = {0};
+  char path_sig_d[PATH_STR_LEN] = {0};
+  char fn_sig_d[FILE_STR_LEN] = {0};
+  char ext_sig_d[EXT_STR_LEN] = {0};
   char output_name[PATH_STR_LEN + FILE_STR_LEN + EXT_STR_LEN] = {0}; //output file name
   char str_tmp[32] = {0}; //for each value with \t
 
   time_t timer;
 
-
+  if(hf) strcpy(hfs, "on\0");
   time(&timer);
-  printf("Program:                         %s\n\
-Tools:                           genome analysis tools\n\n\
+  printf("Tool:                            %s\n\n\
 Input file summit:               %s\n\
 Input file signal:               %s\n\
 Input file signal denominator:   %s\n\
@@ -130,12 +132,13 @@ summit col strand?:              %d\n\
 half range:                      %d\n\
 step size:                       %d\n\
 win size:                        %d\n\
-header flag:                     %d\n\
+header flag:                     %s\n\
 time:                            %s\n",\
- "ga_reads_summit_all", filesmt, filesig, filesig_d, sigfmt, col_chr, col_st, col_ed, col_strand, hw, step, win, hf, ctime(&timer) );
+ "ga_reads_summit_all", filesmt, filesig, filesig_d, sigfmt, col_chr, col_st, col_ed, col_strand, hw, step, win, hfs, ctime(&timer) );
 
   ga_parse_file_path (filesmt, path_smt, fn_smt, ext_smt); //parsing input file name into path, file name, and extension
   ga_parse_file_path (filesig, path_sig, fn_sig, ext_sig);
+  if(filesig_d) ga_parse_file_path (filesig_d, path_sig_d, fn_sig_d, ext_sig_d);
 
   ga_parse_chr_bs(filesmt, &chr_block_headsmt, col_chr, col_st, col_ed, col_strand, hf); //parsing each binding sites for each chromosome
 
@@ -238,7 +241,9 @@ time:                            %s\n",\
     }
   }
 
-  sprintf(output_name, "%s%s_around_%s_halfwid%dwinsize%dstep%d_all.txt", path_sig, fn_sig, fn_smt, hw, win, step);
+  if (filesig_d) sprintf(output_name, "%s%s_divided_%s_around_%s_halfwid%dwinsize%dstep%d_all.txt", path_sig, fn_sig, fn_sig_d, fn_smt, hw, win, step);
+  else sprintf(output_name, "%s%s_around_%s_halfwid%dwinsize%dstep%d_all.txt", path_sig, fn_sig, fn_smt, hw, win, step);
+
   rel = -hw; //relative pos
   memset(ga_line_out, '\0', sizeof(ga_line_out)); //assigning \0 into ga_line_out
 

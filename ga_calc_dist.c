@@ -23,8 +23,7 @@ static void cmp_two_peaks (struct bs *bs1, struct bs *bs2, struct output **outpu
 
 static void usage()
 {
-  printf("Tool:    genome analysis\n\n\
-Program: ga_calc_dist\n\
+  printf("Tool:    ga_calc_dist\n\n\
 Summary: report the distance of two peaks(mode:two) or inter-summit distance(mode:isd)\n\n\
 Usage:   ga_calc_dist [options] -1 <file1> -2 <file2> -mode two\n\
   or:    ga_calc_dist [options] -1 <file1> -mode isd\n\n\
@@ -46,6 +45,7 @@ static void version()
 }
 
 static int hf = 0;
+static char hfs[4] = "off\0";
 static char *file1 = NULL;
 static char *file2 = NULL;
 static char *mode = NULL;
@@ -93,17 +93,17 @@ int main (int argc, char *argv[])
   argument_read(&argc, argv, args);//reading arguments
   if (file1 == NULL || mode == NULL) usage();
 
+  if(hf) strcpy(hfs, "on\0");
   time(&timer);
-  printf("Program:                         %s\n\
-Tools:                           genome analysis tools\n\n\
+  printf("Tool:                            %s\n\n\
 Input file1:                     %s\n\
 Input file2:                     %s\n\
 mode:                            %s\n\
 File1 column of chr, summit:     %d, %d\n\
 File2 column of chr, summit:     %d, %d\n\
-header flag:                     %d\n\
+header flag:                     %s\n\
 time:                            %s\n",\
- "ga_calc_dist", file1, file2, mode, col_chr1, col_smt1, col_chr2, col_smt2, hf, ctime(&timer) );
+ "ga_calc_dist", file1, file2, mode, col_chr1, col_smt1, col_chr2, col_smt2, hfs, ctime(&timer) );
 
   if (!strcmp(mode, "two")) { //mode == two
     ga_parse_chr_bs(file1, &chr_block_head1, col_chr1, col_smt1, col_smt1, -1, hf); //parsing each binding sites for each chromosome without strand info
