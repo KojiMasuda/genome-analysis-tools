@@ -20,3 +20,4 @@ Requirements
 * [GCC compiler](http://gcc.gnu.org/)
 * [GNU C Library(glibc)](http://www.gnu.org/software/libc/)
 * [zlib](http://www.zlib.net/)
+* (optional) [R](http://www.r-project.org/)
