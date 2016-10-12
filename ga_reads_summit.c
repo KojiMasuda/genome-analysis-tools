@@ -436,18 +436,18 @@ time:                            %s\n",\
   goto rtfree;
 
 rtfree:
-  if (arr) my_free(arr);
-  if (arr_tmp) my_free(arr_tmp);
-  if (arr_d) my_free(arr_d);
-  if (arr_tmp_d) my_free(arr_tmp_d);
-  if (arr_a) my_free(arr_a);
-  if (arr_tmp_a) my_free(arr_tmp_a);
-  if (arr_r) my_free(arr_r);
-  if (arr_r_tmp) my_free(arr_r_tmp);
-  if (arr_r_d) my_free(arr_r_d);
-  if (arr_r_d_tmp) my_free(arr_r_d_tmp);
-  if (arr_r_a) my_free(arr_r_a);
-  if (arr_r_a_tmp) my_free(arr_r_a_tmp);
+  MYFREE(arr);
+  MYFREE(arr_tmp);
+  MYFREE(arr_d);
+  MYFREE(arr_tmp_d);
+  MYFREE(arr_a);
+  MYFREE(arr_tmp_a);
+  MYFREE(arr_r);
+  MYFREE(arr_r_tmp);
+  MYFREE(arr_r_d);
+  MYFREE(arr_r_d_tmp);
+  MYFREE(arr_r_a);
+  MYFREE(arr_r_a_tmp);
   if (chr_block_headsmt) ga_free_chr_block(&chr_block_headsmt);
   if (chr_block_headsig) ga_free_chr_block(&chr_block_headsig);
   if (chr_block_headsig_d) ga_free_chr_block(&chr_block_headsig_d);
@@ -458,23 +458,23 @@ rtfree:
   if (output_headr) ga_free_output(&output_headr);
   if (output_head_a) ga_free_output(&output_head_a);
   if (output_headr_a) ga_free_output(&output_headr_a);
-  if (ga_header_line) my_free(ga_header_line);
+  MYFREE(ga_header_line);
 
   return 0;
 
 err:
-  if (arr) my_free(arr);
-  if (arr_tmp) my_free(arr_tmp);
-  if (arr_d) my_free(arr_d);
-  if (arr_tmp_d) my_free(arr_tmp_d);
-  if (arr_a) my_free(arr_a);
-  if (arr_tmp_a) my_free(arr_tmp_a);
-  if (arr_r) my_free(arr_r);
-  if (arr_r_tmp) my_free(arr_r_tmp);
-  if (arr_r_d) my_free(arr_r_d);
-  if (arr_r_d_tmp) my_free(arr_r_d_tmp);
-  if (arr_r_a) my_free(arr_r_a);
-  if (arr_r_a_tmp) my_free(arr_r_a_tmp);
+  MYFREE(arr);
+  MYFREE(arr_tmp);
+  MYFREE(arr_d);
+  MYFREE(arr_tmp_d);
+  MYFREE(arr_a);
+  MYFREE(arr_tmp_a);
+  MYFREE(arr_r);
+  MYFREE(arr_r_tmp);
+  MYFREE(arr_r_d);
+  MYFREE(arr_r_d_tmp);
+  MYFREE(arr_r_a);
+  MYFREE(arr_r_a_tmp);
   if (chr_block_headsmt) ga_free_chr_block(&chr_block_headsmt);
   if (chr_block_headsig) ga_free_chr_block(&chr_block_headsig);
   if (chr_block_headsig_d) ga_free_chr_block(&chr_block_headsig_d);
@@ -485,7 +485,7 @@ err:
   if (output_headr) ga_free_output(&output_headr);
   if (output_head_a) ga_free_output(&output_head_a);
   if (output_headr_a) ga_free_output(&output_headr_a);
-  if (ga_header_line) my_free(ga_header_line);
+  MYFREE(ga_header_line);
   return -1;
 }
 

@@ -270,14 +270,14 @@ time:                              %s\n",\
   if (chr_block_headref) ga_free_chr_block(&chr_block_headref);
   if (chr_block_headexp) ga_free_chr_block(&chr_block_headexp);
   if (output_head) ga_free_output(&output_head);
-  if (ga_header_line) my_free(ga_header_line);
+  MYFREE(ga_header_line);
   return 0;
 
 err:
   if (chr_block_headref) ga_free_chr_block(&chr_block_headref);
   if (chr_block_headexp) ga_free_chr_block(&chr_block_headexp);
   if (output_head) ga_free_output(&output_head);
-  if (ga_header_line) my_free(ga_header_line);
+  MYFREE(ga_header_line);
   return -1;
 }
 

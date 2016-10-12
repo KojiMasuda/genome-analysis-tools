@@ -134,7 +134,7 @@ time:                            %s\n",\
 
   ga_parse_chr_bs(file2, &chr_block_head2, col_chr2, col_st2, col_ed2, -1, hf);
   if (p2 && NULL != ga_header_line) ga_header_line2 = strdup(ga_header_line); //preserving header2 
-  if (NULL != ga_header_line) my_free(ga_header_line);
+  MYFREE (ga_header_line);
   ga_header_line = NULL;
   ga_parse_chr_bs(file1, &chr_block_head1, col_chr1, col_st1, col_ed1, -1, hf); //parsing each binding sites for each chromosome without strand info
 
@@ -241,8 +241,8 @@ time:                            %s\n",\
   }
   fclose(fp);
 
-  if (ga_header_line) my_free(ga_header_line);
-  if (ga_header_line2) my_free(ga_header_line2);
+  MYFREE (ga_header_line);
+  MYFREE (ga_header_line2);
   ga_free_chr_block(&chr_block_head1);
   ga_free_chr_block(&chr_block_head2);
 
@@ -253,8 +253,8 @@ time:                            %s\n",\
   return 0;
 
 err:
-  if (ga_header_line) my_free(ga_header_line);
-  if (ga_header_line2) my_free(ga_header_line2);
+  MYFREE (ga_header_line);
+  MYFREE (ga_header_line2);
   if (chr_block_head1) ga_free_chr_block(&chr_block_head1);
   if (chr_block_head2) ga_free_chr_block(&chr_block_head2);
 

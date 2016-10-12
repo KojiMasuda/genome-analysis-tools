@@ -175,19 +175,19 @@ time:                            %s\n",\
   }
   else ga_write_lines (output_name, out_head, ga_header_line);
 
-  if(ga_header_line) my_free (ga_header_line);
+  MYFREE (ga_header_line);
   ga_free_chr_block_fa(&chr_block_head_fa);
   ga_free_chr_block(&chr_block_head_rgn);
   ga_free_chr_block(&chr_block_head_gt);
-  my_free(frag);
+  MYFREE (frag);
   return 0;
 
 err:
-  if(ga_header_line) my_free (ga_header_line);
+  MYFREE (ga_header_line);
   if (chr_block_head_fa) ga_free_chr_block_fa(&chr_block_head_fa);
   if (chr_block_head_rgn) ga_free_chr_block(&chr_block_head_rgn);
   if (chr_block_head_gt) ga_free_chr_block(&chr_block_head_gt);
-  if (frag) my_free(frag);
+  MYFREE (frag);
   return -1;
 }
 

@@ -365,24 +365,24 @@ time:                            %s\n",\
   goto rtfree;
 
 rtfree:
-  if (arr) my_free(arr);
-  if (arr_d) my_free(arr_d);
+  MYFREE(arr);
+  MYFREE(arr_d);
   if (chr_block_headsmt) ga_free_chr_block(&chr_block_headsmt);
   if (chr_block_headsig) ga_free_chr_block(&chr_block_headsig);
   if (chr_block_headsig_d) ga_free_chr_block(&chr_block_headsig_d);
   if (output_head) ga_free_output(&output_head);
-  if (ga_header_line) my_free(ga_header_line);
+  MYFREE(ga_header_line);
 
   return 0;
 
 err:
-  if (arr) my_free(arr);
-  if (arr_d) my_free(arr_d);
+  MYFREE(arr);
+  MYFREE(arr_d);
   if (chr_block_headsmt) ga_free_chr_block(&chr_block_headsmt);
   if (chr_block_headsig) ga_free_chr_block(&chr_block_headsig);
   if (chr_block_headsig_d) ga_free_chr_block(&chr_block_headsig_d);
   if (output_head) ga_free_output(&output_head);
-  if (ga_header_line) my_free(ga_header_line);
+  MYFREE(ga_header_line);
   return -1;
 }
 

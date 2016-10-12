@@ -69,13 +69,13 @@ void ga_parse_chr_bs (const char *filename, struct chr_block **chr_block_head, i
     if (col_strand >= 0) {
       strand = extract_val_line(line, col_strand , '\t');
       bs_add (chr, chr_block_head, strtoul(st, &e, 10), strtoul(ed, &e, 10), strand[0], line); //adding bs with strand info
-      my_free(strand);
+      MYFREE(strand);
     } else {
       bs_add (chr, chr_block_head, strtoul(st, &e, 10), strtoul(ed, &e, 10), '.', line); //adding bs
     }
-    my_free(chr);
-    my_free(st);
-    my_free(ed);
+    MYFREE(chr);
+    MYFREE(st);
+    MYFREE(ed);
   }
 
   fclose(fp);
@@ -145,19 +145,19 @@ int ga_parse_chr_ref (const char *filename, struct chr_block **chr_block_head, i
         LOG("error: error in ref_append function.");
         goto err;
       }
-      my_free(strand);
+      MYFREE(strand);
     } else {
       if (ref_append (chr, chr_block_head, strtoul(st, &e, 10), strtoul(ed, &e, 10), '.', ex_st, ex_ed, gene, line) != 0){ //appending ref
         LOG("error: error in ref_append function.");
         goto err;
       }
     }
-    my_free(chr);
-    my_free(st);
-    my_free(ed);
-    my_free(ex_st);
-    my_free(ex_ed);
-    my_free(gene);
+    MYFREE(chr);
+    MYFREE(st);
+    MYFREE(ed);
+    MYFREE(ex_st);
+    MYFREE(ex_ed);
+    MYFREE(gene);
   }
 
   fclose(fp);
@@ -165,13 +165,13 @@ int ga_parse_chr_ref (const char *filename, struct chr_block **chr_block_head, i
 
 err:
   fclose(fp);
-  if (chr) my_free(chr);
-  if (st) my_free(st);
-  if (ed) my_free(ed);
-  if (ex_st) my_free(ex_st);
-  if (ex_ed) my_free(ex_ed);
-  if (gene) my_free(gene);
-  if (strand) my_free(strand);
+  MYFREE(chr);
+  MYFREE(st);
+  MYFREE(ed);
+  MYFREE(ex_st);
+  MYFREE(ex_ed);
+  MYFREE(gene);
+  MYFREE(strand);
   return -1;
 }
 
@@ -211,7 +211,7 @@ int ga_parse_chr_fa (const char *filename, struct chr_block_fa **chr_block_head,
           LOG("error: error in chr_block_fa_append function.");
           goto err;
         }
-        my_free(letter);
+        MYFREE(letter);
         letter = NULL;
       }
 
@@ -267,12 +267,12 @@ int ga_parse_chr_fa (const char *filename, struct chr_block_fa **chr_block_head,
     goto err;
   }
 
-  my_free(letter);
+  MYFREE(letter);
   fclose(fp);
   return 0;
 
 err:
-  if (letter) my_free(letter);
+  MYFREE(letter);
   fclose(fp);
   return -1;
 }
@@ -349,10 +349,10 @@ void ga_parse_bedgraph (const char *filename, struct chr_block **chr_block_head)
     val = extract_val_line(line, 3, '\t');
     chr_block_add (chr, chr_block_head); //adding chr link list (if the chr is already linked, the input chr is just ignored)
     sig_add (chr, chr_block_head, strtoul(st, &e, 10), strtoul(ed, &e, 10), atof(val)); //adding bs
-    my_free(chr);
-    my_free(st);
-    my_free(ed);
-    my_free(val);
+    MYFREE(chr);
+    MYFREE(st);
+    MYFREE(ed);
+    MYFREE(val);
   }
 
   fclose(fp);
@@ -398,7 +398,7 @@ static char *extract_val_line (const char *line, int col, const char sep) {
   return (strtemp);
 
 err:
-  if (strtemp) my_free(strtemp);
+  MYFREE(strtemp);
   return (NULL);
 }
 
@@ -543,7 +543,7 @@ static struct bs *bs_add (const char *chr, struct chr_block **chr_block_head, co
   return (p);
 
 err:
-  if (p) my_free (p);
+  MYFREE (p);
   return (NULL);
 }
 
@@ -601,7 +601,7 @@ static int ref_append (const char *chr, struct chr_block **chr_block_head, const
   return 0;
 
 err:
-  if (p) my_free (p);
+  MYFREE (p);
   return -1;
 }
 
@@ -647,7 +647,7 @@ static struct sig *sig_add (const char *chr, struct chr_block **chr_block_head, 
   return (p);
 
 err:
-  if (p) my_free (p);
+  MYFREE (p);
   return (NULL);
 }
 
@@ -709,10 +709,10 @@ void ga_parse_sepwiggz (const char *filename, struct chr_block **chr_block_head)
         if (span_tmp!=NULL) {
           span = pickup_str (span_tmp, 5);
           span_val = atoi(span);
-          if (span) my_free(span);
-          my_free(span_tmp);
+          MYFREE(span);
+          MYFREE(span_tmp);
         }
-        if (chr_tmp) my_free(chr_tmp);
+        MYFREE(chr_tmp);
         break;
       } else if (!strcmp(step, "fixedStep")) {
         chr_tmp  = extract_val_line(line, 1, '\t');
@@ -730,14 +730,14 @@ void ga_parse_sepwiggz (const char *filename, struct chr_block **chr_block_head)
         if (span_tmp!=NULL) {
           span = pickup_str (span_tmp, 5);
           span_val = atoi(span);
-          if (span) my_free(span);
-          my_free(span_tmp);
+          MYFREE(span);
+          MYFREE(span_tmp);
         }
-        if (chr_tmp) my_free(chr_tmp);
-        if (st_tmp) my_free(st_tmp);
-        if (start) my_free(start);
-        if (step_tmp) my_free(step_tmp);
-        if (step_p) my_free(step_p);
+        MYFREE(chr_tmp);
+        MYFREE(st_tmp);
+        MYFREE(start);
+        MYFREE(step_tmp);
+        MYFREE(step_p);
         break;
       }
     }
@@ -748,21 +748,21 @@ void ga_parse_sepwiggz (const char *filename, struct chr_block **chr_block_head)
         val_tmp = extract_val_line(line, 1, '\t');
         st = strtoul(st_tmp, &e, 10);
         sig_add (chr, chr_block_head, st, st + span_val, atof(val_tmp));
-        my_free(st_tmp);
-        my_free(val_tmp);
+        MYFREE(st_tmp);
+        MYFREE(val_tmp);
       }
     } else if (!strcmp(step, "fixedStep")) {
       while (gzgets(gfp, line, LINE_STR_LEN * sizeof(char)) != NULL) { //reading each line
         val_tmp = extract_val_line(line, 0, '\t');
         sig_add (chr, chr_block_head, st, st + span_val, atof(val_tmp));
-        my_free(val_tmp);
+        MYFREE(val_tmp);
         st += step_val;
       }
     }
   }
 
-  if (chr) my_free(chr);
-  if (step) my_free(step);
+  MYFREE(chr);
+  MYFREE(step);
   gzclose(gfp);
   fclose(fp);
 
@@ -777,16 +777,16 @@ void ga_parse_sepwiggz (const char *filename, struct chr_block **chr_block_head)
 err:
   gzclose(gfp);
   fclose(fp);
-  if (step) my_free(step);
-  if (chr) my_free(chr);
-  if (chr_tmp) my_free(chr_tmp);
-  if (span) my_free(span);
-  if (span_tmp) my_free(span_tmp);
-  if (val_tmp) my_free(val_tmp);
-  if (st_tmp) my_free(st_tmp);
-  if (start) my_free(start);
-  if (step_tmp) my_free(step_tmp);
-  if (step_p) my_free(step_p);
+  MYFREE(step);
+  MYFREE(chr);
+  MYFREE(chr_tmp);
+  MYFREE(span);
+  MYFREE(span_tmp);
+  MYFREE(val_tmp);
+  MYFREE(st_tmp);
+  MYFREE(start);
+  MYFREE(step_tmp);
+  MYFREE(step_p);
   return;
 }
 
@@ -828,10 +828,10 @@ void ga_parse_onewiggz (const char *filename, struct chr_block **chr_block_head)
       if (span_tmp!=NULL) {
         span = pickup_str (span_tmp, 5);
         span_val = atoi(span);
-        if (span) my_free(span);
-        my_free(span_tmp);
+        MYFREE(span);
+        MYFREE(span_tmp);
       }
-      if (chr_tmp) my_free(chr_tmp);
+      MYFREE(chr_tmp);
       fl = 1; //with the flag, the program can read the value.
       strcpy(stephold, step);
       continue;
@@ -851,14 +851,14 @@ void ga_parse_onewiggz (const char *filename, struct chr_block **chr_block_head)
       if (span_tmp!=NULL) {
         span = pickup_str (span_tmp, 5);
         span_val = atoi(span);
-        if (span) my_free(span);
-        my_free(span_tmp);
+        MYFREE(span);
+        MYFREE(span_tmp);
       }
-      if (chr_tmp) my_free(chr_tmp);
-      if (st_tmp) my_free(st_tmp);
-      if (start) my_free(start);
-      if (step_tmp) my_free(step_tmp);
-      if (step_p) my_free(step_p);
+      MYFREE(chr_tmp);
+      MYFREE(st_tmp);
+      MYFREE(start);
+      MYFREE(step_tmp);
+      MYFREE(step_p);
       fl = 1; //with the flag, the program can read the value
       strcpy(stephold, step);
       continue;
@@ -867,34 +867,34 @@ void ga_parse_onewiggz (const char *filename, struct chr_block **chr_block_head)
       val_tmp = extract_val_line(line, 1, ' ');
       st = strtoul(st_tmp, &e, 10);
       sig_add (chr, chr_block_head, st, st + span_val, atof(val_tmp));
-      my_free(st_tmp);
-      my_free(val_tmp);
+      MYFREE(st_tmp);
+      MYFREE(val_tmp);
     } else if (fl && !strcmp(stephold, "fixedStep")) {
       val_tmp = extract_val_line(line, 0, ' ');
       sig_add (chr, chr_block_head, st, st + span_val, atof(val_tmp));
-      my_free(val_tmp);
+      MYFREE(val_tmp);
       st += step_val;
     }
   }
 
-  if (chr) my_free(chr);
-  if (step) my_free(step);
+  MYFREE(chr);
+  MYFREE(step);
   gzclose(gfp);
 
   return;
 
 err:
   gzclose(gfp);
-  if (step) my_free(step);
-  if (chr) my_free(chr);
-  if (chr_tmp) my_free(chr_tmp);
-  if (span) my_free(span);
-  if (span_tmp) my_free(span_tmp);
-  if (val_tmp) my_free(val_tmp);
-  if (st_tmp) my_free(st_tmp);
-  if (start) my_free(start);
-  if (step_tmp) my_free(step_tmp);
-  if (step_p) my_free(step_p);
+  MYFREE(step);
+  MYFREE(chr);
+  MYFREE(chr_tmp);
+  MYFREE(span);
+  MYFREE(span_tmp);
+  MYFREE(val_tmp);
+  MYFREE(st_tmp);
+  MYFREE(start);
+  MYFREE(step_tmp);
+  MYFREE(step_p);
   return;
 }
 
@@ -951,24 +951,24 @@ void ga_free_chr_block (struct chr_block **chr_block)
 
     if (ch->bs_init) {
       while (bs) {
-        my_free(bs->line);
+        MYFREE(bs->line);
         bs_tmp = bs->next;
-        my_free(bs);
+        MYFREE(bs);
         bs = bs_tmp;
       }
     }
 
     if (ch->ref_init) {
       while (ref) {
-        my_free(ref->ex_st);
-        my_free(ref->ex_ed);
-        if (NULL != ref->rm_ex_st) my_free(ref->rm_ex_st);
-        if (NULL != ref->rm_ex_ed) my_free(ref->rm_ex_ed);
-        if (NULL != ref->gene) my_free(ref->gene);
-        if (NULL != ref->ov_gene) my_free(ref->ov_gene);
-        my_free(ref->line);
+        MYFREE(ref->ex_st);
+        MYFREE(ref->ex_ed);
+        MYFREE(ref->rm_ex_st);
+        MYFREE(ref->rm_ex_ed);
+        MYFREE(ref->gene);
+        MYFREE(ref->ov_gene);
+        MYFREE(ref->line);
         ref_tmp = ref->next;
-        my_free(ref);
+        MYFREE(ref);
         ref = ref_tmp;
       }
     }
@@ -976,14 +976,14 @@ void ga_free_chr_block (struct chr_block **chr_block)
     if (ch->sig_init) {
       while (sig) {
         sig_tmp = sig->next;
-        my_free(sig);
+        MYFREE(sig);
         sig = sig_tmp;
       }
     }
 
-    my_free(ch->chr);
+    MYFREE(ch->chr);
     ch_tmp = ch->next;
-    my_free(ch);
+    MYFREE(ch);
     ch = ch_tmp;
   }
 
@@ -1000,10 +1000,10 @@ void ga_free_chr_block_fa (struct chr_block_fa **chr_block)
 
   ch = *chr_block;
   while (ch) {
-    my_free(ch->chr);
-    my_free(ch->letter);
+    MYFREE(ch->chr);
+    MYFREE(ch->letter);
     ch_tmp = ch->next;
-    my_free(ch);
+    MYFREE(ch);
     ch = ch_tmp;
   }
 

@@ -47,12 +47,6 @@ void *my_calloc(size_t n, size_t size)
   return p;
 }
 
-void my_free(void *ptr)
-{
-  free(ptr);
-  ptr = NULL; //set NULL ptr
-}
-
 /*
  * this deletes element i of unsigned long arr
  * arr: array where element i is deleted

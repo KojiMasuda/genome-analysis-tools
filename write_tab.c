@@ -131,7 +131,7 @@ static void get_path (char *str, const char *delim, char *path, size_t path_len,
       fprintf(stderr, "path string length is over %lu.\n", path_len * sizeof(char));
       goto err;
     }
-    my_free(tmp);
+    MYFREE(tmp);
     tmp = NULL;
   }
 
@@ -143,14 +143,14 @@ static void get_path (char *str, const char *delim, char *path, size_t path_len,
     goto err;
   }
 
-  my_free(tmp);
-  my_free(strp);
+  MYFREE(tmp);
+  MYFREE(strp);
 
   return;
 
 err:
-  if (strp) my_free(strp);
-  if (tmp) my_free(tmp);
+  MYFREE(strp);
+  MYFREE(tmp);
 
   return;
 }
@@ -220,9 +220,9 @@ void ga_free_output (struct output **out_head)
 
   o = *out_head;
   while (o) {
-    my_free(o->line);
+    MYFREE(o->line);
     tmp = o->next;
-    my_free(o);
+    MYFREE(o);
     o = tmp;
   }
 

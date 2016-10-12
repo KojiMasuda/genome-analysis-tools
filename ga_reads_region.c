@@ -180,9 +180,11 @@ time:                            %s\n",\
   }
 
   if (filesig_d) { //if denominator
-    sprintf(output_name, "%s%s_around_%s_halfwid%d_mode_%s_divided_%s.txt", path_sig, fn_sig, fn_smt, hw, region_mode, fn_sig_d);
+    if (!strcmp(region_mode, "region")) sprintf(output_name, "%s%s_around_%s_mode_%s_divided_%s.txt", path_sig, fn_sig, fn_smt, region_mode, fn_sig_d);
+    else sprintf(output_name, "%s%s_around_%s_halfwid%d_mode_%s_divided_%s.txt", path_sig, fn_sig, fn_smt, hw, region_mode, fn_sig_d);
   } else {
-    sprintf(output_name, "%s%s_around_%s_halfwid%d_mode_%s.txt", path_sig, fn_sig, fn_smt, hw, region_mode);
+    if (!strcmp(region_mode, "region")) sprintf(output_name, "%s%s_around_%s_mode_%s.txt", path_sig, fn_sig, fn_smt, region_mode);
+    else sprintf(output_name, "%s%s_around_%s_halfwid%d_mode_%s.txt", path_sig, fn_sig, fn_smt, hw, region_mode);
   }
 
   if (ga_header_line != NULL) { //if header line
@@ -197,22 +199,20 @@ time:                            %s\n",\
   goto rtfree;
 
 rtfree:
-  if (ga_header_line) my_free (ga_header_line);
+  MYFREE (ga_header_line);
   if (chr_block_headsmt) ga_free_chr_block(&chr_block_headsmt);
   if (chr_block_headsig) ga_free_chr_block(&chr_block_headsig);
   if (chr_block_headsig_d) ga_free_chr_block(&chr_block_headsig_d);
   if (output_head) ga_free_output(&output_head);
-  if (ga_header_line) my_free(ga_header_line);
 
   return 0;
 
 err:
-  if (ga_header_line) my_free (ga_header_line);
+  MYFREE (ga_header_line);
   if (chr_block_headsmt) ga_free_chr_block(&chr_block_headsmt);
   if (chr_block_headsig) ga_free_chr_block(&chr_block_headsig);
   if (chr_block_headsig_d) ga_free_chr_block(&chr_block_headsig_d);
   if (output_head) ga_free_output(&output_head);
-  if (ga_header_line) my_free(ga_header_line);
   return -1;
 }
 

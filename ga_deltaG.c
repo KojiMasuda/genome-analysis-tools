@@ -210,14 +210,14 @@ time:                            %s\n",\
 
   ga_free_chr_block_fa(&chr_block_head);
   ga_free_chr_block(&chr_block_head_gt);
-  my_free(frag);
+  MYFREE(frag);
   return 0;
 
 err:
   gzclose(gfp);
   if (chr_block_head) ga_free_chr_block_fa(&chr_block_head);
   if (chr_block_head_gt) ga_free_chr_block(&chr_block_head_gt);
-  if (frag) my_free(frag);
+  MYFREE(frag);
   return -1;
 }
 
