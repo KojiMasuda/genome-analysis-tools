@@ -261,7 +261,11 @@ time:                              %s\n",\
 
   if (cf) sprintf(output_name, "%sRPKM_of_%s_%s_consid_ov.txt", path_exp, fn_exp, fn_ref);
   else sprintf(output_name, "%sRPKM_of_%s_%s.txt", path_exp, fn_exp, fn_ref);
-  ga_write_lines (output_name, output_head, ga_header_line);
+
+  if (hf && !cf) add_one_val(ga_line_out, ga_header_line, "RPKM\n");
+  else if (hf && cf) add_one_val(ga_line_out, ga_header_line, "RPKM\tsub_exons_st\tsub_exons_ed\tov_genes\tov_prop\n");
+  if (hf) ga_write_lines (output_name, output_head, ga_line_out);
+  else ga_write_lines (output_name, output_head, ga_header_line);
 
   if (chr_block_headref) ga_free_chr_block(&chr_block_headref);
   if (chr_block_headexp) ga_free_chr_block(&chr_block_headexp);

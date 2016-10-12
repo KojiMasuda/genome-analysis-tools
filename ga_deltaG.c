@@ -27,7 +27,7 @@ Usage:   ga_deltaG -fa <fasta file> -gt <genome table file> -lib <library name: 
 Options:\n\
          -v: output version information and exit.\n\
          -h, --help: display this help and exit.\n\
-         --gradient: coefficients are used for the energy calculation. The middle of the window is coeffient of 1, and it linearly decreases to 0 for both left and right side (default:0).\n");
+         --gradient: coefficients are used for the energy calculation. The middle of the window is coeffient of 1, and it linearly decreases to 0 for both left and right side (default:off).\n");
   exit(0);
 }
 
@@ -43,6 +43,7 @@ static char *gt = NULL; //genome table
 static char *lib = NULL; //library
 static int step = 0, win = 0; //step and window size
 static int gf = 0; //gradient flag
+static char gfs[4] = "off\0"; //gradient flag
 
 
 static const Argument args[] = {
@@ -83,6 +84,7 @@ int main (int argc, char *argv[])
 
   argument_read(&argc, argv, args);//reading arguments
   if (fa == NULL || gt == NULL || lib == NULL || !win || !step) usage();
+  if (gf) strcpy(gfs, "on\0");
 
   time(&timer);
   printf("Tool:                            %s\n\n\
@@ -91,9 +93,9 @@ genome table:                    %s\n\
 library:                         %s\n\
 window size:                     %d\n\
 step size:                       %d\n\
-gradient?:                       %d\n\
+gradient?:                       %s\n\
 time:                            %s\n",\
- "ga_deltaG", fa, gt, lib, win, step, gf, ctime(&timer) );
+ "ga_deltaG", fa, gt, lib, win, step, gfs, ctime(&timer) );
 
   ga_parse_chr_bs (gt, &chr_block_head_gt, 0, 1, 1, -1, 0); //parsing genome tible
   if (ga_parse_chr_fa(fa, &chr_block_head, chr_block_head_gt) != 0){
