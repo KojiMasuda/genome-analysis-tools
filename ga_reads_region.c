@@ -26,8 +26,8 @@ static void usage()
 {
   printf("Tool:    ga_reads_region\n\n\
 Summary: report the amount of reads inside regions\n\n\
-Usage:   ga_reads_region [options] --smt <file_summit> --sig <file_signal> --sigfmt <sig format:bedgraph | sepwiggz | onewiggz> --mode smt --col_smt <column of summit>\n\
-   or:   ga_reads_region [options] --smt <file_summit> --sig <file_signal> --sigfmt <sig format:bedgraph | sepwiggz | onewiggz> --mode <region mode: region | up-tss | tss-dw | up-tss-dw | up-tes | tes-dw | up-tes-dw>\n\n\
+Usage:   ga_reads_region [options] --smt <summit file> --sig <signal file> --sigfmt <sig format:bedgraph | sepwiggz | onewiggz> --mode smt --col_smt <int: column of summit>\n\
+   or:   ga_reads_region [options] --smt <region file> --sig <signal file> --sigfmt <sig format:bedgraph | sepwiggz | onewiggz> --mode <region mode: region | up-tss | tss-dw | up-tss-dw | up-tes | tes-dw | up-tes-dw>\n\n\
 Options:\n\
          -v: output version information and exit.\n\
          -h, --help: display this help and exit.\n\

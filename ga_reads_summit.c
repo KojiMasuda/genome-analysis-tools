@@ -29,7 +29,7 @@ static void usage()
 {
   printf("Tool:    ga_reads_summit\n\n\
 Summary: report the average distribution of signals around summits\n\n\
-Usage:   ga_reads_summit [options] --smt <file_summit> --sig <file_signal> --sigfmt <sig format:bedgraph | sepwiggz | onewiggz>\n\n\
+Usage:   ga_reads_summit [options] --smt <summit file> --sig <signal file> --sigfmt <sig format:bedgraph | sepwiggz | onewiggz>\n\n\
 Options:\n\
          -v: output version information and exit.\n\
          -h, --help: display this help and exit.\n\

@@ -26,7 +26,7 @@ static void usage()
 {
   printf("Tool:    ga_reads_summit_all\n\n\
 Summary: report the read distributions around ALL summits\n\n\
-Usage:   ga_reads_summit_all [options] --smt <file_summit> --sig <file_signal> --sigfmt <sig format:bedgraph | sepwiggz | onewiggz>\n\n\
+Usage:   ga_reads_summit_all [options] --smt <summit file> --sig <signal file> --sigfmt <sig format:bedgraph | sepwiggz | onewiggz>\n\n\
 Options:\n\
          -v: output version information and exit.\n\
          -h, --help: display this help and exit.\n\

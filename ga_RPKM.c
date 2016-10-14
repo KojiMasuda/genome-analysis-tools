@@ -26,8 +26,8 @@ static void usage()
 {
   printf("Tool:    ga_RPKM\n\n\
 Summary: report the expression level as reads per kilobase per million mapped reads (RPKM)\n\n\
-Usage:   ga_RPKM [options] -exp <expression file in bedgraph format> -ref <reference file> -readlen <read length(default:101)>\n\
-or       ga_RPKM [options] -exp <expression file in bedgraph format> -ref <reference file> -readlen <read length(default:101)> --consid_ov --thresh <threshold(default:0.5)>\n\n\
+Usage:   ga_RPKM [options] -exp <expression file in bedgraph format> -ref <reference file> -readlen <int: read length(default:101)>\n\
+or       ga_RPKM [options] -exp <expression file in bedgraph format> -ref <reference file> -readlen <int: read length(default:101)> --consid_ov --thresh <double: threshold(default:0.5)>\n\n\
 Options:\n\
          -v: output version information and exit.\n\
          -h, --help: display this help and exit.\n\
