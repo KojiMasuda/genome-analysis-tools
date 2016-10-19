@@ -128,7 +128,7 @@ static void get_path (char *str, const char *delim, char *path, size_t path_len,
       strncat(path, delim, sizeof(char));
     }
     else {
-      fprintf(stderr, "path string length is over %lu.\n", path_len * sizeof(char));
+      fprintf(stderr, "path string length is over %u.\n", (unsigned int)(path_len * sizeof(char)));
       goto err;
     }
     MYFREE(tmp);
@@ -139,7 +139,7 @@ static void get_path (char *str, const char *delim, char *path, size_t path_len,
     strncpy(fn, tmp, strlen(tmp) * sizeof(char));
   }
   else {
-    fprintf(stderr, "filename string length is over %lu.\n", fn_len * sizeof(char));
+    fprintf(stderr, "filename string length is over %u.\n", (unsigned int)(fn_len * sizeof(char)));
     goto err;
   }
 
