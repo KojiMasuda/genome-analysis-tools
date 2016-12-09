@@ -37,6 +37,7 @@ Options:\n\
          --col_smt <int>: column number for summit position of summit file (default:1).\n\
          --col_strand <int>: column number for strand of summit file (default:-1).\n\
          --header: the header of summit file is preserved (default:off).\n\
+         --norm_len: normalization by region length (default:off).\n\
          --sig_d: signal denominator file like input (default:NULL)\n\
          --hw: <int> half range size (default:1000)\n");
   exit(0);
@@ -51,6 +52,8 @@ static void version()
 
 static int hf = 0;
 static char hfs[4] = "off\0";
+static int nf = 0;
+static char nfs[4] = "off\0";
 static char *filesmt = NULL;
 static char *filesig = NULL;
 static char *filesig_d = NULL;
@@ -69,6 +72,7 @@ static const Argument args[] = {
   {"--help"       , ARGUMENT_TYPE_FUNCTION, usage        },
   {"-v"           , ARGUMENT_TYPE_FUNCTION, version      },
   {"--header"     , ARGUMENT_TYPE_FLAG_ON , &hf          },
+  {"--norm_len"   , ARGUMENT_TYPE_FLAG_ON , &nf          },
   {"--smt"        , ARGUMENT_TYPE_STRING  , &filesmt     },
   {"--sig"        , ARGUMENT_TYPE_STRING  , &filesig     },
   {"--sig_d"      , ARGUMENT_TYPE_STRING  , &filesig_d   },
@@ -111,6 +115,7 @@ int main (int argc, char *argv[])
   time_t timer;
 
   if(hf) strcpy(hfs, "on\0");
+  if(nf) strcpy(nfs, "on\0");
   time(&timer);
   printf("Tool:                            %s\n\n\
 Input file summit:               %s\n\
@@ -123,8 +128,9 @@ summit col of summit:            %d\n\
 summit col strand?:              %d\n\
 half range:                      %d\n\
 header flag:                     %s\n\
+norm by length flag:             %s\n\
 time:                            %s\n",\
- "ga_reads_region", filesmt, filesig, filesig_d, sigfmt, region_mode, col_chr, col_st, col_ed, col_st, col_strand, hw, hfs, ctime(&timer) );
+ "ga_reads_region", filesmt, filesig, filesig_d, sigfmt, region_mode, col_chr, col_st, col_ed, col_st, col_strand, hw, hfs, nfs, ctime(&timer) );
 
   ga_parse_file_path (filesmt, path_smt, fn_smt, ext_smt); //parsing input file name into path, file name, and extension
   ga_parse_file_path (filesig, path_sig, fn_sig, ext_sig);
@@ -413,10 +419,13 @@ static int sig_count (struct chr_block *chr_block_headsmt, struct chr_block *chr
           sprintf(tmp, "NA\n");
         } else {
 //          sprintf(tmp, "%f\n", (val_tmp / val_tmp_d) / (float)(ed - st));
-          sprintf(tmp, "%f\n", (val_tmp / val_tmp_d) );
+          sprintf(tmp, "%.3f\n", (val_tmp / val_tmp_d) );
         }
       }
-      else sprintf(tmp, "%f\n", val_tmp / (float)(ed - st));
+      else {
+        if (nf) sprintf(tmp, "%.3f\n", val_tmp / (float)(ed - st)); //normalization by region length
+        else sprintf(tmp, "%.3f\n", val_tmp );
+      }
 
       if (add_one_val(ga_line_out, bs->line, tmp) != 0){
         LOG("error: output line was too long.");
